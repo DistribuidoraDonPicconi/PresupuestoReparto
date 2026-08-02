@@ -213,11 +213,11 @@
     padding:4px;
   }
   .stepper button{
-    width:34px; height:34px;
+    width:44px; height:44px;
     border-radius:999px;
     border:none;
     background:var(--surface);
-    font-size:18px;
+    font-size:22px;
     font-weight:700;
     color:var(--accent);
     cursor:pointer;
@@ -225,12 +225,12 @@
   }
   .stepper button:active{transform:scale(0.92);}
   .stepper input{
-    width:88px;
+    width:96px;
     text-align:center;
     border:none;
     background:transparent;
     font-family:'IBM Plex Mono',monospace;
-    font-size:16px;
+    font-size:20px;
     font-weight:600;
     color:var(--ink);
   }
@@ -857,7 +857,7 @@
       <div class="stepper-center">
         <div class="stepper">
           <button type="button" id="menos">−</button>
-          <input type="text" id="cantidad" value="1" inputmode="numeric" pattern="[0-9.]*">
+          <input type="text" id="cantidad" value="1" inputmode="decimal" pattern="[0-9,]*">
           <button type="button" id="mas">+</button>
         </div>
       </div>
@@ -1101,6 +1101,20 @@
     return Number(String(str).replace(/\D/g,'')) || 0;
   }
 
+  // Cantidad de mercadería: admite decimales (coma como separador, ej: 0,5 - 3,60)
+  function formatCantidad(n){
+    n = Math.round((Number(n)||0) * 100) / 100;
+    return n.toLocaleString('es-AR', {maximumFractionDigits:2});
+  }
+  function parseCantidad(str){
+    let s = String(str).replace(',', '.');
+    s = s.replace(/[^0-9.]/g, '');
+    const partes = s.split('.');
+    if(partes.length > 2) s = partes[0] + '.' + partes.slice(1).join('');
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  }
+
   function uid(){ return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
   // ---------- Tabs ----------
@@ -1152,7 +1166,7 @@
     seleccionado = p;
     const step = getStep(p);
     const inp = document.getElementById('cantidad');
-    inp.value = formatMiles(step);
+    inp.value = formatCantidad(step);
     document.getElementById('productoSelect').value = p.id;
     renderQuickGrid();
     renderSelector();
@@ -1173,7 +1187,7 @@
       btnAgregar.disabled = true;
       return;
     }
-    const cant = parseMiles(document.getElementById('cantidad').value)||1;
+    const cant = parseCantidad(document.getElementById('cantidad').value)||1;
     precioUnit.textContent = money(seleccionado.precio) + ' c/u';
     totalActual.textContent = money(seleccionado.precio * cant);
     btnAgregar.disabled = false;
@@ -1182,35 +1196,40 @@
   document.getElementById('menos').addEventListener('click', ()=>{
     const inp = document.getElementById('cantidad');
     const step = getStep(seleccionado);
-    const val = Math.max(step, (parseMiles(inp.value)||step) - step);
-    inp.value = formatMiles(val);
+    const val = Math.max(step, (parseCantidad(inp.value)||step) - step);
+    inp.value = formatCantidad(val);
     renderSelector();
   });
   document.getElementById('mas').addEventListener('click', ()=>{
     const inp = document.getElementById('cantidad');
     const step = getStep(seleccionado);
-    const val = (parseMiles(inp.value)||0) + step;
-    inp.value = formatMiles(val);
+    const val = (parseCantidad(inp.value)||0) + step;
+    inp.value = formatCantidad(val);
     renderSelector();
   });
   document.getElementById('cantidad').addEventListener('change', ()=>{
     const inp = document.getElementById('cantidad');
     const step = getStep(seleccionado);
-    let val = parseMiles(inp.value) || step;
-    if(val < 1) val = step;
-    inp.value = formatMiles(val);
+    let val = parseCantidad(inp.value) || step;
+    if(val <= 0) val = step;
+    inp.value = formatCantidad(val);
     renderSelector();
   });
   document.getElementById('cantidad').addEventListener('input', (e)=>{
     const inp = e.target;
-    const raw = parseMiles(inp.value);
-    inp.value = raw ? formatMiles(raw) : '';
+    // mientras se escribe: sólo limpia caracteres inválidos, sin reformatear
+    // (para no pisar la coma decimal a medio escribir, ej. "0,")
+    let v = inp.value.replace(/[^0-9,]/g, '');
+    const partes = v.split(',');
+    if(partes.length > 2) v = partes[0] + ',' + partes.slice(1).join('');
+    else if(partes.length === 2 && partes[1].length > 2) v = partes[0] + ',' + partes[1].slice(0,2);
+    inp.value = v;
     renderSelector();
   });
 
   document.getElementById('btnAgregar').addEventListener('click', ()=>{
     if(!seleccionado) return;
-    const cant = parseMiles(document.getElementById('cantidad').value)||1;
+    const cant = parseCantidad(document.getElementById('cantidad').value)||1;
     const existente = pedido.find(it => it.productoId === seleccionado.id && it.precio === seleccionado.precio);
     if(existente){
       existente.cantidad += cant;
@@ -1244,7 +1263,7 @@
         row.innerHTML = `
           <div class="i-left">
             <div class="i-name">${escapeHtml(it.nombre)}</div>
-            <div class="i-sub">${formatMiles(it.cantidad)} x ${money(it.precio)}</div>
+            <div class="i-sub">${formatCantidad(it.cantidad)} x ${money(it.precio)}</div>
           </div>
           <div class="i-total">${money(it.precio*it.cantidad)}</div>
           <button class="i-del" data-id="${it.id}" data-capture-hide="1">✕</button>
@@ -1381,7 +1400,7 @@
           <div class="t-item">
             <div class="i-left">
               <div class="i-name">${escapeHtml(it.nombre)}</div>
-              <div class="i-sub">${formatMiles(it.cantidad)} x ${money(it.precio)}</div>
+              <div class="i-sub">${formatCantidad(it.cantidad)} x ${money(it.precio)}</div>
             </div>
             <div class="i-total">${money(it.precio*it.cantidad)}</div>
           </div>
@@ -1481,7 +1500,7 @@
         <div class="ri-item">
           <div>
             <div class="ri-name">${escapeHtml(it.nombre)}</div>
-            <div class="ri-sub">${formatMiles(it.cantidad)} x ${money(it.precio)}</div>
+            <div class="ri-sub">${formatCantidad(it.cantidad)} x ${money(it.precio)}</div>
           </div>
           <div class="ri-sub">${money(it.precio*it.cantidad)}</div>
         </div>
