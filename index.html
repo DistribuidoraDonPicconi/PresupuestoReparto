@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Presupuesto Rápido</title>
+
+<!-- Instalación como app (Android / iOS) -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2E5233">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Presupuesto">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --bg:#F2F4EC;
+    --surface:#FFFFFF;
+    --ink:#1E2A1F;
+    --ink-soft:#5B6B5C;
+    --accent:#2E5233;
+    --accent-dark:#203B26;
+    --accent-soft:#DEE9DE;
+    --mustard:#D9A441;
+    --red:#C1443C;
+    --line:#DCE1D5;
+    --radius:16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding-bottom:calc(24px + env(safe-area-inset-bottom));
+  }
+  .app{
+    max-width:480px;
+    margin:0 auto;
+    padding:16px 16px 0;
+  }
+  header.top{
+    padding:calc(14px + env(safe-area-inset-top)) 4px 6px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+  }
+  header.top h1{
+    font-family:'Fraunces',serif;
+    font-weight:800;
+    font-size:22px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  header.top .biz-name{
+    font-size:12px;
+    color:var(--ink-soft);
+    font-weight:600;
+  }
+  nav.tabs{
+    display:flex;
+    background:var(--surface);
+    border-radius:999px;
+    padding:4px;
+    margin:8px 0 18px;
+    box-shadow:0 1px 2px rgba(30,42,31,0.06);
+  }
+  nav.tabs button{
+    flex:1;
+    border:none;
+    background:transparent;
+    padding:11px 0;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    color:var(--ink-soft);
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  nav.tabs button.active{
+    background:var(--accent);
+    color:#fff;
+  }
+  .panel{display:none;}
+  .panel.active{display:block; animation:fade .18s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:translateY(0)}}
+
+  .section-label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    font-weight:700;
+    color:var(--ink-soft);
+    margin:0 2px 10px;
+  }
+
+  /* ---- Quick grid ---- */
+  .quick-grid{
+    margin-bottom:20px;
+  }
+  .quick-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .quick-row:last-child{margin-bottom:0;}
+  .quick-btn{
+    flex:1;
+    background:var(--surface);
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:12px 6px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .12s ease, transform .08s ease, background .12s ease;
+  }
+  .quick-btn:active{transform:scale(0.96);}
+  .quick-btn.selected{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .quick-btn .q-name{
+    font-weight:700;
+    font-size:13.5px;
+    display:block;
+  }
+  .quick-btn .q-price{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    display:block;
+    margin-top:2px;
+  }
+  .quick-empty{
+    grid-column:1/-1;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13px;
+    padding:18px 10px;
+    background:var(--surface);
+    border-radius:12px;
+    border:1.5px dashed var(--line);
+  }
+
+  /* ---- Selector card ---- */
+  .selector-card{
+    background:var(--surface);
+    border-radius:var(--radius);
+    padding:22px 18px;
+    margin-bottom:18px;
+    box-shadow:0 1px 2px rgba(30,42,31,0.06);
+  }
+  .selector-card .sel-name{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:19px;
+  }
+  .selector-card .sel-empty{
+    color:var(--ink-soft);
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+    font-weight:500;
+  }
+  .row-between{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:12px;
+  }
+  .producto-select{
+    display:block;
+    width:fit-content;
+    max-width:100%;
+    min-width:150px;
+    margin:0 auto;
+    border:1.5px solid var(--line);
+    background:var(--bg);
+    border-radius:999px;
+    padding:12px 38px 12px 20px;
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:16px;
+    color:var(--ink);
+    text-align:center;
+    text-align-last:center;
+    appearance:none;
+    -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235B6B5C' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat:no-repeat;
+    background-position:right 14px center;
+    background-size:15px;
+  }
+  .producto-select:focus{outline:none; border-color:var(--accent);}
+  .stepper-center{
+    display:flex;
+    justify-content:center;
+    margin-top:22px;
+  }
+  .stepper{
+    display:flex;
+    align-items:center;
+    background:var(--bg);
+    border-radius:999px;
+    padding:4px;
+  }
+  .stepper button{
+    width:34px; height:34px;
+    border-radius:999px;
+    border:none;
+    background:var(--surface);
+    font-size:18px;
+    font-weight:700;
+    color:var(--accent);
+    cursor:pointer;
+    box-shadow:0 1px 1px rgba(0,0,0,0.06);
+  }
+  .stepper button:active{transform:scale(0.92);}
+  .stepper input{
+    width:88px;
+    text-align:center;
+    border:none;
+    background:transparent;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:16px;
+    font-weight:600;
+    color:var(--ink);
+  }
+  .price-total{
+    text-align:center;
+    margin-top:14px;
+  }
+  .price-total .u{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .price-total .t{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:19px;
+    color:var(--accent-dark);
+    margin-top:2px;
+  }
+  .add-btn{
+    width:100%;
+    margin-top:18px;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    padding:13px;
+    border-radius:12px;
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    cursor:pointer;
+    transition:background .12s ease, opacity .12s ease;
+  }
+  .add-btn:active{background:var(--accent-dark);}
+  .add-btn:disabled{opacity:.4; cursor:not-allowed;}
+
+  /* ---- Ticket ---- */
+  #ticket-wrap{background:transparent;}
+  .ticket{
+    background:var(--surface);
+    border-radius:var(--radius) var(--radius) 0 0;
+    padding:18px 18px 14px;
+    position:relative;
+  }
+  .ticket .t-head{
+    text-align:center;
+    margin-bottom:12px;
+  }
+  .ticket .t-biz{
+    font-family:'Fraunces',serif;
+    font-weight:800;
+    font-size:17px;
+  }
+  .ticket .t-date{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .ticket-line{
+    border:none;
+    border-top:1.5px dashed var(--line);
+    margin:10px 0;
+  }
+  .t-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:7px 0;
+    gap:8px;
+  }
+  .t-item .i-left{flex:1; min-width:0;}
+  .t-item .i-name{font-weight:600; font-size:14px;}
+  .t-item .i-sub{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+  }
+  .t-item .i-total{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:14.5px;
+    white-space:nowrap;
+  }
+  .t-item .i-del{
+    border:none;
+    background:none;
+    color:var(--red);
+    font-size:16px;
+    padding:2px 4px;
+    cursor:pointer;
+    line-height:1;
+  }
+  .t-empty{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13.5px;
+    padding:22px 8px;
+  }
+  .t-total-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-top:6px;
+    padding-top:10px;
+    border-top:2px solid var(--ink);
+  }
+  .t-total-row .label{
+    font-weight:700;
+    font-size:14px;
+  }
+  .t-total-row .value{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:21px;
+    color:var(--accent-dark);
+  }
+  .zigzag{
+    height:12px;
+    background:
+      linear-gradient(135deg, var(--surface) 50%, transparent 50%) 0 0,
+      linear-gradient(45deg, var(--surface) 50%, transparent 50%) 0 0;
+    background-size:14px 14px;
+    background-repeat:repeat-x;
+    background-color:var(--bg);
+  }
+
+  .ticket-actions{
+    display:flex;
+    gap:8px;
+    margin-top:14px;
+  }
+  .ticket-actions button{
+    flex:1;
+    padding:12px 6px;
+    border-radius:12px;
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+    border:1.5px solid transparent;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+  }
+  .btn-copy{
+    background:var(--mustard);
+    color:#3A2A05;
+  }
+  .btn-copy:active{opacity:.85;}
+  .btn-registrar{
+    background:var(--accent);
+    color:#fff;
+  }
+  .btn-registrar:active{opacity:.85;}
+  .btn-new{
+    background:var(--surface);
+    color:var(--red);
+    border-color:var(--red);
+  }
+  .btn-new:active{background:#FBEAE8;}
+
+  /* ---- Precios tab ---- */
+  .biz-input-wrap{
+    background:var(--surface);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:18px;
+  }
+  .biz-input-wrap label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    font-weight:700;
+    color:var(--ink-soft);
+  }
+  .biz-input-wrap input{
+    width:100%;
+    border:none;
+    border-bottom:1.5px solid var(--line);
+    padding:8px 2px;
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:16px;
+    color:var(--ink);
+    background:transparent;
+    margin-top:4px;
+  }
+  .biz-input-wrap input:focus{outline:none; border-color:var(--accent);}
+
+  .price-row{
+    background:var(--surface);
+    border-radius:12px;
+    padding:10px 12px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .price-row .price-field{
+    display:flex;
+    align-items:center;
+    background:var(--bg);
+    border-radius:8px;
+    padding:0 6px;
+  }
+  .price-row .price-field span{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .price-row .price-field .price-input{
+    width:78px;
+    border:none;
+    background:transparent;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:14px;
+    color:var(--ink);
+    padding:8px 4px;
+  }
+  .price-row input:focus{outline:none;}
+  .price-row .del-btn{
+    border:none;
+    background:none;
+    color:var(--red);
+    font-size:17px;
+    padding:4px 6px;
+    cursor:pointer;
+  }
+  .add-product-btn{
+    width:100%;
+    background:var(--accent-soft);
+    color:var(--accent-dark);
+    border:1.5px dashed var(--accent);
+    padding:12px;
+    border-radius:12px;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+    margin-top:6px;
+    margin-bottom:30px;
+  }
+  /* ---- Registros tab ---- */
+  .registro-card{
+    background:var(--surface);
+    border-radius:12px;
+    margin-bottom:10px;
+    overflow:hidden;
+    box-shadow:0 1px 2px rgba(30,42,31,0.06);
+  }
+  .registro-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 14px;
+    cursor:pointer;
+  }
+  .registro-head .r-date{
+    font-weight:700;
+    font-size:13.5px;
+  }
+  .registro-head .r-sub{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .registro-head .r-total{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:15px;
+    color:var(--accent-dark);
+  }
+  .registro-head .r-right{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .registro-head .r-arrow{
+    font-size:12px;
+    color:var(--ink-soft);
+    transition:transform .15s ease;
+  }
+  .registro-card.open .r-arrow{transform:rotate(180deg);}
+  .registro-items{
+    display:none;
+    padding:0 14px 12px;
+    border-top:1.5px dashed var(--line);
+  }
+  .registro-card.open .registro-items{display:block;}
+  .registro-items .ri-item{
+    display:flex;
+    justify-content:space-between;
+    padding:6px 0;
+    font-size:13px;
+  }
+  .registro-items .ri-item .ri-name{font-weight:600;}
+  .registro-items .ri-item .ri-sub{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+  }
+  .registro-items .ri-del-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:6px;
+  }
+  .registro-items .r-del{
+    border:none;
+    background:none;
+    color:var(--red);
+    font-weight:700;
+    font-size:12.5px;
+    padding:6px 4px;
+    cursor:pointer;
+  }
+  .registro-items .r-share{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    border:none;
+    background:none;
+    color:var(--accent);
+    font-weight:700;
+    font-size:12.5px;
+    padding:6px 4px;
+    cursor:pointer;
+  }
+  .registros-empty{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13px;
+    padding:22px 10px;
+    background:var(--surface);
+    border-radius:12px;
+    border:1.5px dashed var(--line);
+    margin-bottom:14px;
+  }
+
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:calc(20px + env(safe-area-inset-bottom));
+    transform:translateX(-50%) translateY(120%);
+    background:var(--ink);
+    color:#fff;
+    padding:11px 18px;
+    border-radius:999px;
+    font-size:13.5px;
+    font-weight:600;
+    box-shadow:0 4px 14px rgba(0,0,0,0.2);
+    transition:transform .25s ease;
+    z-index:50;
+    white-space:nowrap;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);}
+
+  .img-modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(20,26,20,0.92);
+    z-index:100;
+    padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+    overflow-y:auto;
+  }
+  .img-modal.show{display:flex; flex-direction:column; align-items:center;}
+  .img-modal-topbar{
+    width:100%;
+    max-width:440px;
+    display:flex;
+    justify-content:flex-end;
+    margin-bottom:10px;
+  }
+  .img-modal-topbar button{
+    background:rgba(255,255,255,0.12);
+    border:none;
+    color:#fff;
+    width:36px; height:36px;
+    border-radius:999px;
+    font-size:17px;
+    cursor:pointer;
+  }
+  .img-modal img{
+    max-width:100%;
+    width:100%;
+    max-width:440px;
+    border-radius:14px;
+    box-shadow:0 6px 24px rgba(0,0,0,0.35);
+  }
+  .img-modal .hint{
+    color:#fff;
+    text-align:center;
+    font-size:13.5px;
+    font-weight:600;
+    margin:16px 0 4px;
+    max-width:320px;
+  }
+  .img-modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+    width:100%;
+    max-width:440px;
+  }
+  .img-modal-actions a, .img-modal-actions button{
+    flex:1;
+    text-align:center;
+    text-decoration:none;
+    padding:12px 8px;
+    border-radius:12px;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+    border:none;
+  }
+  .img-modal-actions .dl{
+    background:var(--mustard);
+    color:#3A2A05;
+  }
+  .img-modal-actions .sh{
+    background:var(--accent);
+    color:#fff;
+  }
+
+  .confirm-modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(20,26,20,0.55);
+    z-index:110;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .confirm-modal.show{display:flex;}
+  .confirm-card{
+    background:var(--surface);
+    border-radius:18px;
+    padding:22px 20px 18px;
+    max-width:320px;
+    width:100%;
+    text-align:center;
+    box-shadow:0 12px 30px rgba(0,0,0,0.25);
+  }
+  .confirm-card .c-title{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:17px;
+    margin:0 0 8px;
+  }
+  .confirm-card .c-msg{
+    font-size:14px;
+    color:var(--ink-soft);
+    margin:0 0 18px;
+    line-height:1.4;
+  }
+  .confirm-actions{
+    display:flex;
+    gap:10px;
+  }
+  .confirm-actions button{
+    flex:1;
+    border:none;
+    padding:12px 8px;
+    border-radius:12px;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .confirm-actions .c-no{
+    background:var(--bg);
+    color:var(--ink);
+  }
+  .confirm-actions .c-yes{
+    background:var(--red);
+    color:#fff;
+  }
+
+  /* ---- Saldo card ---- */
+  .saldo-card{
+    background:var(--surface);
+    border-radius:var(--radius);
+    padding:14px 16px 16px;
+    margin-bottom:18px;
+    box-shadow:0 1px 2px rgba(30,42,31,0.06);
+  }
+  .saldo-card .toggle-btn{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:11px 12px;
+    cursor:pointer;
+    transition:border-color .12s ease, background .12s ease;
+  }
+  .saldo-card .toggle-btn:active{transform:scale(0.99);}
+  .saldo-card .toggle-btn.active{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .saldo-card .toggle-btn .tb-check{
+    width:18px; height:18px;
+    border-radius:5px;
+    border:1.5px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:12px;
+    color:transparent;
+    background:var(--bg);
+    flex-shrink:0;
+  }
+  .saldo-card .toggle-btn.active .tb-check{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+  }
+  .saldo-card .toggle-btn .tb-label{
+    font-weight:600;
+    font-size:14px;
+  }
+  .saldo-card .saldo-fields-row{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+  }
+  .saldo-card .saldo-field{flex:1; min-width:0;}
+  .saldo-card .saldo-field label{
+    font-size:14px;
+    font-weight:700;
+    color:var(--ink);
+    display:block;
+    margin-bottom:6px;
+  }
+  .saldo-card .price-field{
+    display:flex;
+    align-items:center;
+    background:var(--bg);
+    border-radius:10px;
+    padding:0 10px;
+    height:50px;
+  }
+  .saldo-card .price-field span{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    color:var(--ink-soft);
+    flex-shrink:0;
+  }
+  .saldo-card .price-field input{
+    width:100%;
+    min-width:0;
+    border:none;
+    background:transparent;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:17px;
+    color:var(--ink);
+    padding:8px 6px;
+    text-align:left;
+    -moz-appearance:textfield;
+  }
+  .saldo-card .price-field input::-webkit-outer-spin-button,
+  .saldo-card .price-field input::-webkit-inner-spin-button{
+    -webkit-appearance:none; margin:0;
+  }
+  .saldo-card .price-field input:focus{outline:none;}
+
+  /* ---- Saldo dentro del ticket ---- */
+  .t-saldo-anterior{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--accent-soft);
+    border-radius:8px;
+    padding:8px 10px;
+    margin-bottom:10px;
+    font-size:13px;
+    font-weight:700;
+    color:var(--accent-dark);
+  }
+  .t-saldo-anterior .value{font-family:'IBM Plex Mono',monospace;}
+  .t-extra-row{
+    display:flex;
+    justify-content:space-between;
+    padding:4px 0;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .t-extra-row .value{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    color:var(--ink);
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <h1>Presupuesto</h1>
+    <span class="biz-name" id="bizLabel"></span>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="ventas">Ventas</button>
+    <button class="tab" data-tab="precios">Precios</button>
+    <button class="tab" data-tab="registros">Registros</button>
+  </nav>
+
+  <!-- VENTAS -->
+  <section class="panel active" id="panel-ventas">
+    <p class="section-label">Productos rápidos</p>
+    <div class="quick-grid" id="quickGrid"></div>
+
+    <div class="selector-card">
+      <select class="producto-select" id="productoSelect">
+        <option value="">Elegí un producto</option>
+      </select>
+      <div class="stepper-center">
+        <div class="stepper">
+          <button type="button" id="menos">−</button>
+          <input type="text" id="cantidad" value="1" inputmode="numeric" pattern="[0-9.]*">
+          <button type="button" id="mas">+</button>
+        </div>
+      </div>
+      <div class="price-total">
+        <div class="u" id="precioUnit">—</div>
+        <div class="t" id="totalActual">$ 0</div>
+      </div>
+      <button class="add-btn" id="btnAgregar" disabled>Agregar al presupuesto</button>
+    </div>
+
+    <div class="saldo-card">
+      <div class="toggle-btn" id="toggleSaldoPendiente">
+        <span class="tb-check">✓</span>
+        <span class="tb-label">Incluir Cobro</span>
+      </div>
+      <div class="saldo-detalle" id="saldoDetalle" style="display:none;">
+        <div class="saldo-fields-row">
+          <div class="saldo-field" id="wrapSaldoAnterior">
+            <label>Saldo Anterior</label>
+            <div class="price-field">
+              <span>$</span>
+              <input type="text" id="inpSaldoAnterior" value="0" inputmode="numeric" pattern="[0-9.]*">
+            </div>
+          </div>
+          <div class="saldo-field">
+            <label>Pago Recibido</label>
+            <div class="price-field">
+              <span>$</span>
+              <input type="text" id="inpEntregado" value="0" inputmode="numeric" pattern="[0-9.]*">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="section-label">Presupuesto</p>
+    <div id="ticket-wrap">
+      <div class="ticket" id="ticketCapture">
+        <div class="t-head">
+          <div class="t-biz" id="ticketBiz">Presupuesto</div>
+          <div class="t-date" id="ticketDate"></div>
+        </div>
+        <div class="t-saldo-anterior" id="ticketSaldoAnterior" style="display:none;">
+          <span>Saldo Anterior</span>
+          <span class="value" id="ticketSaldoAnteriorVal">$ 0</span>
+        </div>
+        <hr class="ticket-line">
+        <div id="itemsList"></div>
+        <div class="t-total-row">
+          <span class="label" id="totalFinalLabel">Total final</span>
+          <span class="value" id="totalFinal">$ 0</span>
+        </div>
+        <div class="t-extra-row" id="ticketEntregadoRow" style="display:none;">
+          <span>Pago Recibido</span>
+          <span class="value" id="ticketEntregadoVal">$ 0</span>
+        </div>
+        <div class="t-total-row" id="ticketSaldoPendienteRow" style="display:none;">
+          <span class="label">Saldo Pendiente</span>
+          <span class="value" id="ticketSaldoPendienteVal">$ 0</span>
+        </div>
+      </div>
+      <div class="zigzag"></div>
+    </div>
+
+    <div class="ticket-actions">
+      <button class="btn-copy" id="btnCopiar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Compartir</button>
+      <button class="btn-registrar" id="btnRegistrar">📌 Registrar</button>
+      <button class="btn-new" id="btnNuevo">🗑 Restablecer</button>
+    </div>
+  </section>
+
+  <!-- PRECIOS -->
+  <section class="panel" id="panel-precios">
+    <p class="section-label">Lista de precios</p>
+    <p style="font-size:12.5px; color:var(--ink-soft); margin:-6px 2px 14px;">Tocá el precio de cada producto para editarlo.</p>
+    <div id="preciosList"></div>
+  </section>
+
+  <!-- REGISTROS -->
+  <section class="panel" id="panel-registros">
+    <p class="section-label">Presupuestos guardados</p>
+    <p style="font-size:12.5px; color:var(--ink-soft); margin:-6px 2px 14px;">Se guardan acá al tocar "Registrar". <br> Tocá uno para ver el detalle.</p>
+    <div id="registrosList"></div>
+    <button class="add-product-btn" id="btnVaciarRegistros" style="border-color:var(--red); color:var(--red);">🗑 Borrar historial</button>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="img-modal" id="imgModal">
+  <div class="img-modal-topbar">
+    <button id="closeModal" aria-label="Cerrar">✕</button>
+  </div>
+  <img id="modalImg" alt="Presupuesto">
+  <p class="hint">Mantén presionada la imagen para guardar o compartir con el cliente</p>
+  <div class="img-modal-actions">
+    <button class="sh" id="shareBtn">Compartir</button>
+    <a class="dl" id="downloadLink" download="presupuesto.png">Descargar</a>
+  </div>
+</div>
+
+<div class="confirm-modal" id="confirmModal">
+  <div class="confirm-card">
+    <p class="c-title" id="confirmTitle">¿Estás seguro?</p>
+    <p class="c-msg" id="confirmMsg"></p>
+    <div class="confirm-actions">
+      <button class="c-no" id="confirmNo">Cancelar</button>
+      <button class="c-yes" id="confirmYes">Borrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const LS_PRODUCTOS = 'pr_productos_v2';
+  const LS_PEDIDO = 'pr_pedido';
+  const LS_REGISTROS = 'pr_registros';
+  const LS_SALDO = 'pr_saldo';
+  const BIZ_NAME = 'Distribuidora Don Picconi';
+
+  // Catálogo fijo: los nombres no se editan, sólo el precio (en Precios).
+  const catalogoBase = [
+    {id:'p1', nombre:'Cajón Pollo', precio:63000},
+    {id:'p2', nombre:'Unidad Pollo', precio:3150},
+    {id:'p3', nombre:'Cuartos', precio:2950},
+    {id:'p4', nombre:'Filet de Muslo', precio:6100},
+    {id:'p5', nombre:'Alas', precio:2650},
+    {id:'p6', nombre:'Pechuga', precio:6600},
+    {id:'p7', nombre:'Pechuga B', precio:5800},
+    {id:'p8', nombre:'Pechuguín', precio:5800},
+    {id:'p9', nombre:'Menudos', precio:1100},
+    {id:'p10', nombre:'Molida', precio:34000},
+    {id:'p11', nombre:'Carcazas', precio:22000},
+    {id:'p12', nombre:'Medallones', precio:28500},
+    {id:'p13', nombre:'Formitas', precio:8000},
+    {id:'p14', nombre:'Tiritas', precio:10000},
+  ];
+
+  // Sólo el precio persiste editado por el usuario; nombre y orden vienen fijos del catálogo.
+  const preciosGuardados = JSON.parse(localStorage.getItem(LS_PRODUCTOS) || 'null');
+  let productos = catalogoBase.map(p=>{
+    const guardado = preciosGuardados && preciosGuardados.find(g=>g.id===p.id);
+    return {id:p.id, nombre:p.nombre, precio: guardado ? guardado.precio : p.precio};
+  });
+  let pedido = JSON.parse(localStorage.getItem(LS_PEDIDO) || 'null') || [];
+  let registros = JSON.parse(localStorage.getItem(LS_REGISTROS) || 'null') || [];
+  let saldoState = JSON.parse(localStorage.getItem(LS_SALDO) || 'null') || {incluido:false, anterior:0, entregado:0};
+  const bizName = BIZ_NAME;
+  let seleccionado = null;
+
+  // Agrupación de los botones rápidos por renglón (usa los ids del catálogo)
+  const filasRapidas = [
+    ['p1','p2'],                 // Cajón Pollo, Unidad Pollo
+    ['p3','p4','p5'],            // Cuartos, Filet de Muslo, Alas
+    ['p6','p7','p8'],            // Pechuga, Pechuga B, Pechuguín
+    ['p9','p10','p11'],          // Menudos, Molida, Carcazas
+    ['p12','p13','p14'],         // Medallones, Formitas, Tiritas
+  ];
+
+  // Paso de incremento/decremento de cantidad según el producto
+  const stepMap = {
+    p1:1, p2:1,                       // Cajón Pollo, Unidad Pollo -> de 1
+    p3:10, p4:10, p5:10, p6:10,
+    p7:10, p8:10, p9:10,              // Cuartos..Menudos -> de 10
+    p10:1, p11:1, p12:1,              // Molida, Carcazas, Medallones -> de 1
+    p13:2, p14:2,                     // Formitas, Tiritas -> de 2
+  };
+  function getStep(prod){ return (prod && stepMap[prod.id]) || 1; }
+
+  function saveProductos(){
+    localStorage.setItem(LS_PRODUCTOS, JSON.stringify(productos.map(p=>({id:p.id, precio:p.precio}))));
+  }
+  function savePedido(){ localStorage.setItem(LS_PEDIDO, JSON.stringify(pedido)); }
+  function saveRegistros(){ localStorage.setItem(LS_REGISTROS, JSON.stringify(registros)); }
+  function saveSaldo(){ localStorage.setItem(LS_SALDO, JSON.stringify(saldoState)); }
+
+  function archivarPedidoActual(){
+    if(pedido.length === 0 && !saldoState.incluido) return;
+    const totalProductos = pedido.reduce((s,it)=> s + it.precio*it.cantidad, 0);
+    const saldoPendiente = calcularSaldoPendiente();
+    registros.unshift({
+      id: uid(),
+      fecha: new Date().toISOString(),
+      bizName: bizName,
+      items: pedido.map(it=>({nombre:it.nombre, precio:it.precio, cantidad:it.cantidad})),
+      total: totalProductos,
+      saldoIncluido: saldoState.incluido,
+      saldoAnterior: saldoState.incluido ? saldoState.anterior : 0,
+      entregado: saldoState.incluido ? saldoState.entregado : 0,
+      saldoPendiente: saldoPendiente
+    });
+    saveRegistros();
+  }
+
+  // ---------- Saldo (Anterior / Entregado / Actual) ----------
+  function calcularSaldoPendiente(){
+    const totalProductos = pedido.reduce((s,it)=> s + it.precio*it.cantidad, 0);
+    if(!saldoState.incluido) return totalProductos;
+    return saldoState.anterior + totalProductos - saldoState.entregado;
+  }
+
+  function renderSaldoCard(){
+    const toggle = document.getElementById('toggleSaldoPendiente');
+    const detalle = document.getElementById('saldoDetalle');
+    toggle.classList.toggle('active', saldoState.incluido);
+    detalle.style.display = saldoState.incluido ? 'block' : 'none';
+    document.getElementById('inpSaldoAnterior').value = formatMiles(saldoState.anterior);
+    document.getElementById('inpEntregado').value = formatMiles(saldoState.entregado);
+  }
+
+  document.getElementById('toggleSaldoPendiente').addEventListener('click', ()=>{
+    saldoState.incluido = !saldoState.incluido;
+    saveSaldo();
+    renderSaldoCard();
+    renderTicket();
+  });
+  document.getElementById('inpSaldoAnterior').addEventListener('input', (e)=>{
+    const raw = parseMiles(e.target.value);
+    e.target.value = raw ? formatMiles(raw) : '';
+    saldoState.anterior = raw;
+    saveSaldo();
+    renderTicket();
+  });
+  document.getElementById('inpEntregado').addEventListener('input', (e)=>{
+    const raw = parseMiles(e.target.value);
+    e.target.value = raw ? formatMiles(raw) : '';
+    saldoState.entregado = raw;
+    saveSaldo();
+    renderTicket();
+  });
+
+  function money(n){
+    n = Math.round(Number(n)||0);
+    return '$ ' + n.toLocaleString('es-AR');
+  }
+  function formatMiles(n){
+    n = Math.round(Number(n)||0);
+    return n.toLocaleString('es-AR');
+  }
+  function parseMiles(str){
+    return Number(String(str).replace(/\D/g,'')) || 0;
+  }
+
+  function uid(){ return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+  // ---------- Tabs ----------
+  document.querySelectorAll('.tab').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+      if(btn.dataset.tab === 'precios') renderPrecios();
+      if(btn.dataset.tab === 'registros') renderRegistros();
+    });
+  });
+
+  // ---------- Quick grid ----------
+  function renderQuickGrid(){
+    const grid = document.getElementById('quickGrid');
+    grid.innerHTML = '';
+    if(productos.length === 0){
+      grid.innerHTML = '<div class="quick-empty">No hay productos cargados.<br>Andá a la pestaña "Precios" para agregar.</div>';
+      return;
+    }
+    filasRapidas.forEach(idsFila=>{
+      const row = document.createElement('div');
+      row.className = 'quick-row';
+      idsFila.forEach(id=>{
+        const p = productos.find(x=>x.id===id);
+        if(!p) return;
+        const btn = document.createElement('div');
+        btn.className = 'quick-btn' + (seleccionado && seleccionado.id === p.id ? ' selected' : '');
+        btn.innerHTML = `<span class="q-name">${escapeHtml(p.nombre)}</span><span class="q-price">${money(p.precio)}</span>`;
+        btn.addEventListener('click', ()=> selectProduct(p.id));
+        row.appendChild(btn);
+      });
+      if(row.children.length) grid.appendChild(row);
+    });
+  }
+
+  function renderProductoSelect(){
+    const sel = document.getElementById('productoSelect');
+    sel.innerHTML = '<option value="">Elegí un producto</option>' +
+      productos.map(p=>`<option value="${p.id}">${escapeHtml(p.nombre)}</option>`).join('');
+    sel.value = seleccionado ? seleccionado.id : '';
+  }
+
+  function selectProduct(id){
+    const p = productos.find(x=>x.id===id);
+    if(!p) return;
+    seleccionado = p;
+    const step = getStep(p);
+    const inp = document.getElementById('cantidad');
+    inp.value = formatMiles(step);
+    document.getElementById('productoSelect').value = p.id;
+    renderQuickGrid();
+    renderSelector();
+  }
+
+  document.getElementById('productoSelect').addEventListener('change', (e)=>{
+    if(e.target.value) selectProduct(e.target.value);
+    else { seleccionado = null; renderQuickGrid(); renderSelector(); }
+  });
+
+  function renderSelector(){
+    const precioUnit = document.getElementById('precioUnit');
+    const totalActual = document.getElementById('totalActual');
+    const btnAgregar = document.getElementById('btnAgregar');
+    if(!seleccionado){
+      precioUnit.textContent = '—';
+      totalActual.textContent = '$ 0';
+      btnAgregar.disabled = true;
+      return;
+    }
+    const cant = parseMiles(document.getElementById('cantidad').value)||1;
+    precioUnit.textContent = money(seleccionado.precio) + ' c/u';
+    totalActual.textContent = money(seleccionado.precio * cant);
+    btnAgregar.disabled = false;
+  }
+
+  document.getElementById('menos').addEventListener('click', ()=>{
+    const inp = document.getElementById('cantidad');
+    const step = getStep(seleccionado);
+    const val = Math.max(step, (parseMiles(inp.value)||step) - step);
+    inp.value = formatMiles(val);
+    renderSelector();
+  });
+  document.getElementById('mas').addEventListener('click', ()=>{
+    const inp = document.getElementById('cantidad');
+    const step = getStep(seleccionado);
+    const val = (parseMiles(inp.value)||0) + step;
+    inp.value = formatMiles(val);
+    renderSelector();
+  });
+  document.getElementById('cantidad').addEventListener('change', ()=>{
+    const inp = document.getElementById('cantidad');
+    const step = getStep(seleccionado);
+    let val = parseMiles(inp.value) || step;
+    if(val < 1) val = step;
+    inp.value = formatMiles(val);
+    renderSelector();
+  });
+  document.getElementById('cantidad').addEventListener('input', (e)=>{
+    const inp = e.target;
+    const raw = parseMiles(inp.value);
+    inp.value = raw ? formatMiles(raw) : '';
+    renderSelector();
+  });
+
+  document.getElementById('btnAgregar').addEventListener('click', ()=>{
+    if(!seleccionado) return;
+    const cant = parseMiles(document.getElementById('cantidad').value)||1;
+    const existente = pedido.find(it => it.productoId === seleccionado.id && it.precio === seleccionado.precio);
+    if(existente){
+      existente.cantidad += cant;
+    } else {
+      pedido.push({
+        id: uid(),
+        productoId: seleccionado.id,
+        nombre: seleccionado.nombre,
+        precio: seleccionado.precio,
+        cantidad: cant
+      });
+    }
+    savePedido();
+    renderTicket();
+    showToast('Agregado al presupuesto');
+    seleccionado = null;
+    renderQuickGrid();
+    renderSelector();
+  });
+
+  // ---------- Ticket ----------
+  function renderTicket(){
+    const list = document.getElementById('itemsList');
+    list.innerHTML = '';
+    if(pedido.length === 0){
+      list.innerHTML = '<div class="t-empty">Todavía no agregaste productos</div>';
+    } else {
+      pedido.forEach(it=>{
+        const row = document.createElement('div');
+        row.className = 't-item';
+        row.innerHTML = `
+          <div class="i-left">
+            <div class="i-name">${escapeHtml(it.nombre)}</div>
+            <div class="i-sub">${formatMiles(it.cantidad)} x ${money(it.precio)}</div>
+          </div>
+          <div class="i-total">${money(it.precio*it.cantidad)}</div>
+          <button class="i-del" data-id="${it.id}" data-capture-hide="1">✕</button>
+        `;
+        list.appendChild(row);
+      });
+      list.querySelectorAll('.i-del').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          pedido = pedido.filter(it=>it.id !== b.dataset.id);
+          savePedido();
+          renderTicket();
+        });
+      });
+    }
+    const total = pedido.reduce((s,it)=> s + it.precio*it.cantidad, 0);
+    document.getElementById('totalFinal').textContent = money(total);
+    document.getElementById('ticketBiz').textContent = bizName || 'Presupuesto';
+    document.getElementById('ticketDate').textContent = new Date().toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
+    document.getElementById('bizLabel').textContent = bizName || '';
+
+    const mostrarSeccionSaldo = saldoState.incluido;
+    const mostrarSaldoAnterior = saldoState.incluido && saldoState.anterior !== 0;
+    const mostrarEntregado = saldoState.incluido && saldoState.entregado !== 0;
+
+    const filaSaldoAnterior = document.getElementById('ticketSaldoAnterior');
+    filaSaldoAnterior.style.display = mostrarSaldoAnterior ? 'flex' : 'none';
+    if(mostrarSaldoAnterior) document.getElementById('ticketSaldoAnteriorVal').textContent = money(saldoState.anterior);
+
+    document.getElementById('totalFinalLabel').textContent = mostrarSeccionSaldo ? 'Total productos' : 'Total final';
+
+    const filaEntregado = document.getElementById('ticketEntregadoRow');
+    filaEntregado.style.display = mostrarEntregado ? 'flex' : 'none';
+    if(mostrarEntregado) document.getElementById('ticketEntregadoVal').textContent = '- ' + money(saldoState.entregado);
+
+    const filaSaldoPendiente = document.getElementById('ticketSaldoPendienteRow');
+    filaSaldoPendiente.style.display = mostrarSeccionSaldo ? 'flex' : 'none';
+    if(mostrarSeccionSaldo) document.getElementById('ticketSaldoPendienteVal').textContent = money(calcularSaldoPendiente());
+  }
+
+  // ---------- Confirmación propia (reemplaza confirm() nativo) ----------
+  function showConfirm(msg, onYes){
+    const modal = document.getElementById('confirmModal');
+    document.getElementById('confirmMsg').textContent = msg;
+    modal.classList.add('show');
+    const yesBtn = document.getElementById('confirmYes');
+    const noBtn = document.getElementById('confirmNo');
+    function cleanup(){
+      modal.classList.remove('show');
+      yesBtn.removeEventListener('click', onYesClick);
+      noBtn.removeEventListener('click', onNoClick);
+    }
+    function onYesClick(){ cleanup(); onYes(); }
+    function onNoClick(){ cleanup(); }
+    yesBtn.addEventListener('click', onYesClick);
+    noBtn.addEventListener('click', onNoClick);
+  }
+
+  document.getElementById('btnNuevo').addEventListener('click', ()=>{
+    if(pedido.length === 0 && !saldoState.incluido) return;
+    showConfirm('¿Borrar y empezar uno nuevo?', ()=>{
+      pedido = [];
+      savePedido();
+      saldoState = {incluido:false, anterior:0, entregado:0};
+      saveSaldo();
+      renderSaldoCard();
+      renderTicket();
+      showToast('Presupuesto borrado');
+    });
+  });
+
+  // Genera una imagen a partir de un elemento tipo .ticket y la muestra en el modal,
+  // dejando listo el botón de compartir nativo si está disponible.
+  async function generarYMostrarImagen(el){
+    if(typeof html2canvas === 'undefined'){
+      showToast('Necesitás conexión a internet la primera vez');
+      return false;
+    }
+    const delBtns = el.querySelectorAll('[data-capture-hide]');
+    delBtns.forEach(b=> b.style.visibility = 'hidden');
+    try{
+      const canvas = await html2canvas(el, {backgroundColor:'#FFFFFF', scale:2, useCORS:true, allowTaint:true});
+      delBtns.forEach(b=> b.style.visibility = '');
+      const dataUrl = canvas.toDataURL('image/png');
+      document.getElementById('modalImg').src = dataUrl;
+      document.getElementById('downloadLink').href = dataUrl;
+      document.getElementById('imgModal').classList.add('show');
+      document.body.style.overflow = 'hidden';
+
+      canvas.toBlob((blob)=>{
+        const shareBtn = document.getElementById('shareBtn');
+        const file = blob ? new File([blob], 'presupuesto.png', {type:'image/png'}) : null;
+        const canShare = file && navigator.canShare && navigator.canShare({files:[file]});
+        shareBtn.style.display = canShare ? '' : 'none';
+        shareBtn.onclick = async ()=>{
+          try{ await navigator.share({files:[file], title:'Presupuesto'}); }
+          catch(e){ /* usuario canceló */ }
+        };
+      }, 'image/png');
+      return true;
+    }catch(err){
+      delBtns.forEach(b=> b.style.visibility = '');
+      showToast('No se pudo generar la imagen');
+      return false;
+    }
+  }
+
+  document.getElementById('btnCopiar').addEventListener('click', async ()=>{
+    if(pedido.length === 0 && !saldoState.incluido){ showToast('Agregá productos primero'); return; }
+    const btn = document.getElementById('btnCopiar');
+    const originalHtml = btn.innerHTML;
+    btn.textContent = '⏳ Generando...';
+    btn.disabled = true;
+    await generarYMostrarImagen(document.getElementById('ticketCapture'));
+    btn.innerHTML = originalHtml;
+    btn.disabled = false;
+  });
+
+  document.getElementById('btnRegistrar').addEventListener('click', ()=>{
+    if(pedido.length === 0 && !saldoState.incluido){ showToast('Agregá productos primero'); return; }
+    archivarPedidoActual();
+    showToast('Presupuesto registrado');
+  });
+
+  // ---------- Compartir un registro puntual desde la pestaña Registros ----------
+  function construirTicketDesdeRegistro(r){
+    const mostrarSeccionSaldo = !!r.saldoIncluido;
+    const mostrarSaldoAnterior = r.saldoIncluido && r.saldoAnterior;
+    const mostrarEntregado = r.saldoIncluido && r.entregado;
+    const fechaTicket = new Date(r.fecha).toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
+
+    const itemsHtml = (!r.items || r.items.length === 0)
+      ? '<div class="t-empty">Todavía no agregaste productos</div>'
+      : r.items.map(it=>`
+          <div class="t-item">
+            <div class="i-left">
+              <div class="i-name">${escapeHtml(it.nombre)}</div>
+              <div class="i-sub">${formatMiles(it.cantidad)} x ${money(it.precio)}</div>
+            </div>
+            <div class="i-total">${money(it.precio*it.cantidad)}</div>
+          </div>
+        `).join('');
+
+    const wrap = document.createElement('div');
+    wrap.className = 'ticket';
+    wrap.style.width = '448px';
+    wrap.innerHTML = `
+      <div class="t-head">
+        <div class="t-biz">${escapeHtml(r.bizName || 'Presupuesto')}</div>
+        <div class="t-date">${fechaTicket}</div>
+      </div>
+      <div class="t-saldo-anterior" style="display:${mostrarSaldoAnterior ? 'flex' : 'none'};">
+        <span>Saldo Anterior</span>
+        <span class="value">${money(r.saldoAnterior)}</span>
+      </div>
+      <hr class="ticket-line">
+      <div>${itemsHtml}</div>
+      <div class="t-total-row">
+        <span class="label">${mostrarSeccionSaldo ? 'Total productos' : 'Total final'}</span>
+        <span class="value">${money(r.total)}</span>
+      </div>
+      <div class="t-extra-row" style="display:${mostrarEntregado ? 'flex' : 'none'};">
+        <span>Pago Recibido</span>
+        <span class="value">- ${money(r.entregado)}</span>
+      </div>
+      <div class="t-total-row" style="display:${mostrarSeccionSaldo ? 'flex' : 'none'};">
+        <span class="label">Saldo Pendiente</span>
+        <span class="value">${money(r.saldoPendiente)}</span>
+      </div>
+    `;
+    return wrap;
+  }
+
+  async function compartirRegistro(r){
+    const contenedor = document.createElement('div');
+    contenedor.style.position = 'fixed';
+    contenedor.style.left = '-9999px';
+    contenedor.style.top = '0';
+    const ticketEl = construirTicketDesdeRegistro(r);
+    contenedor.appendChild(ticketEl);
+    document.body.appendChild(contenedor);
+    await generarYMostrarImagen(ticketEl);
+    document.body.removeChild(contenedor);
+  }
+
+  document.getElementById('closeModal').addEventListener('click', ()=>{
+    document.getElementById('imgModal').classList.remove('show');
+    document.body.style.overflow = '';
+  });
+
+  // ---------- Precios tab (sólo precio editable) ----------
+  function renderPrecios(){
+    const list = document.getElementById('preciosList');
+    list.innerHTML = '';
+    productos.forEach(p=>{
+      const row = document.createElement('div');
+      row.className = 'price-row';
+      row.innerHTML = `
+        <span style="flex:1; font-weight:600; font-size:14.5px;">${escapeHtml(p.nombre)}</span>
+        <div class="price-field">
+          <span>$</span>
+          <input type="text" class="price-input" value="${formatMiles(p.precio)}" data-id="${p.id}" inputmode="numeric" pattern="[0-9.]*">
+        </div>
+      `;
+      list.appendChild(row);
+    });
+    list.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        const p = productos.find(x=>x.id === inp.dataset.id);
+        if(!p) return;
+        const raw = parseMiles(inp.value);
+        inp.value = raw ? formatMiles(raw) : '';
+        p.precio = raw;
+        saveProductos();
+        renderQuickGrid();
+        renderProductoSelect();
+        if(seleccionado && seleccionado.id === p.id) renderSelector();
+      });
+    });
+  }
+
+  // ---------- Registros tab ----------
+  function renderRegistros(){
+    const list = document.getElementById('registrosList');
+    list.innerHTML = '';
+    if(registros.length === 0){
+      list.innerHTML = '<div class="registros-empty">Todavía no hay presupuestos guardados.<br>Se guardan al tocar "Registrar".</div>';
+      return;
+    }
+    registros.forEach(r=>{
+      const card = document.createElement('div');
+      card.className = 'registro-card';
+      const fechaLabel = new Date(r.fecha).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+      const itemsHtml = r.items.map(it=>`
+        <div class="ri-item">
+          <div>
+            <div class="ri-name">${escapeHtml(it.nombre)}</div>
+            <div class="ri-sub">${formatMiles(it.cantidad)} x ${money(it.precio)}</div>
+          </div>
+          <div class="ri-sub">${money(it.precio*it.cantidad)}</div>
+        </div>
+      `).join('');
+      const mostrarSaldoAnteriorR = r.saldoIncluido && r.saldoAnterior;
+      const mostrarEntregadoR = !!r.entregado;
+      const mostrarSaldoPendienteR = r.saldoIncluido || mostrarEntregadoR;
+      const saldoHtml = (mostrarSaldoAnteriorR || mostrarEntregadoR || mostrarSaldoPendienteR) ? `
+        <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);">
+          ${mostrarSaldoAnteriorR ? `<div class="ri-item"><span>Saldo Anterior</span><span class="ri-sub">${money(r.saldoAnterior)}</span></div>` : ''}
+          ${mostrarEntregadoR ? `<div class="ri-item"><span>Pago Recibido</span><span class="ri-sub">- ${money(r.entregado)}</span></div>` : ''}
+          ${mostrarSaldoPendienteR ? `<div class="ri-item" style="font-weight:700;"><span>Saldo Pendiente</span><span>${money(r.saldoPendiente)}</span></div>` : ''}
+        </div>
+      ` : '';
+      card.innerHTML = `
+        <div class="registro-head" data-id="${r.id}">
+          <div>
+            <div class="r-date">${fechaLabel}</div>
+            <div class="r-sub">${r.items.length} ${r.items.length === 1 ? 'producto' : 'productos'}</div>
+          </div>
+          <div class="r-right">
+            <div class="r-total">${money(r.total)}</div>
+            <span class="r-arrow">▾</span>
+          </div>
+        </div>
+        <div class="registro-items">
+          ${itemsHtml}
+          ${saldoHtml}
+          <div class="ri-del-row">
+            <button class="r-share" data-id="${r.id}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Compartir</button>
+            <button class="r-del" data-id="${r.id}">Eliminar registro</button>
+          </div>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+    list.querySelectorAll('.registro-head').forEach(head=>{
+      head.addEventListener('click', ()=>{
+        head.parentElement.classList.toggle('open');
+      });
+    });
+    list.querySelectorAll('.r-del').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        showConfirm('¿Eliminar este presupuesto guardado?', ()=>{
+          registros = registros.filter(r=>r.id !== btn.dataset.id);
+          saveRegistros();
+          renderRegistros();
+        });
+      });
+    });
+    list.querySelectorAll('.r-share').forEach(btn=>{
+      btn.addEventListener('click', async (e)=>{
+        e.stopPropagation();
+        const r = registros.find(x=>x.id === btn.dataset.id);
+        if(!r) return;
+        const originalHtml = btn.innerHTML;
+        btn.textContent = '⏳...';
+        btn.disabled = true;
+        await compartirRegistro(r);
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+      });
+    });
+  }
+
+  document.getElementById('btnVaciarRegistros').addEventListener('click', ()=>{
+    if(registros.length === 0) return;
+    showConfirm('¿Borrar todo el historial de Registros? Esto no se puede deshacer.', ()=>{
+      registros = [];
+      saveRegistros();
+      renderRegistros();
+      showToast('Historial vaciado');
+    });
+  });
+
+  // ---------- Utils ----------
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function escapeAttr(str){ return escapeHtml(str); }
+
+  let toastTimer;
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> t.classList.remove('show'), 1800);
+  }
+
+  // ---------- Init ----------
+  renderProductoSelect();
+  renderQuickGrid();
+  renderSelector();
+  renderSaldoCard();
+  renderTicket();
+})();
+</script>
+</body>
+</html>
