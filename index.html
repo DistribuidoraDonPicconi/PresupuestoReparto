@@ -290,6 +290,13 @@
     color:var(--ink-soft);
     margin-top:2px;
   }
+  .ticket .t-cliente{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:12.5px;
+    color:var(--ink);
+    margin-top:4px;
+  }
   .ticket-line{
     border:none;
     border-top:1.5px dashed var(--line);
@@ -803,6 +810,71 @@
   }
   .saldo-card .price-field input:focus{outline:none;}
 
+  .cliente-card{
+    background:var(--surface);
+    border-radius:var(--radius);
+    padding:14px 16px 16px;
+    margin-bottom:18px;
+    box-shadow:0 1px 2px rgba(30,42,31,0.06);
+  }
+  .cliente-card .toggle-btn{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:11px 12px;
+    cursor:pointer;
+    transition:border-color .12s ease, background .12s ease;
+  }
+  .cliente-card .toggle-btn:active{transform:scale(0.99);}
+  .cliente-card .toggle-btn.active{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .cliente-card .toggle-btn .tb-check{
+    width:18px; height:18px;
+    border-radius:5px;
+    border:1.5px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:12px;
+    color:transparent;
+    background:var(--bg);
+    flex-shrink:0;
+  }
+  .cliente-card .toggle-btn.active .tb-check{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+  }
+  .cliente-card .toggle-btn .tb-label{
+    font-weight:600;
+    font-size:14px;
+  }
+  .cliente-card .cliente-detalle{margin-top:14px;}
+  .cliente-card .cliente-field{
+    display:flex;
+    align-items:center;
+    background:var(--bg);
+    border-radius:10px;
+    padding:0 12px;
+    height:50px;
+  }
+  .cliente-card .cliente-field input{
+    width:100%;
+    min-width:0;
+    border:none;
+    background:transparent;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    color:var(--ink);
+    padding:8px 0;
+  }
+  .cliente-card .cliente-field input:focus{outline:none;}
+
   /* ---- Saldo dentro del ticket ---- */
   .t-saldo-anterior{
     display:flex;
@@ -868,6 +940,18 @@
       <button class="add-btn" id="btnAgregar" disabled>Agregar al presupuesto</button>
     </div>
 
+    <div class="cliente-card">
+      <div class="toggle-btn" id="toggleCliente">
+        <span class="tb-check">✓</span>
+        <span class="tb-label">Incluir Nombre</span>
+      </div>
+      <div class="cliente-detalle" id="clienteDetalle" style="display:none;">
+        <div class="cliente-field">
+          <input type="text" id="inpCliente" placeholder="Nombre del cliente" maxlength="60">
+        </div>
+      </div>
+    </div>
+
     <div class="saldo-card">
       <div class="toggle-btn" id="toggleSaldoPendiente">
         <span class="tb-check">✓</span>
@@ -899,6 +983,7 @@
         <div class="t-head">
           <div class="t-biz" id="ticketBiz">Presupuesto</div>
           <div class="t-date" id="ticketDate"></div>
+          <div class="t-cliente" id="ticketCliente" style="display:none;"></div>
         </div>
         <div class="t-saldo-anterior" id="ticketSaldoAnterior" style="display:none;">
           <span>Saldo Anterior</span>
@@ -971,11 +1056,38 @@
 </div>
 
 <script>
+  // Auto-actualización: si en el servidor hay una versión más nueva que la que
+  // se cargó (aunque sea desde una copia vieja guardada en caché), la detecta
+  // y recarga la página automáticamente para traer la última versión.
+  (function(){
+    var APP_VERSION = '2026-08-03.1';
+    function checkForUpdate(){
+      try{
+        fetch(location.pathname + '?_check=' + Date.now(), {cache:'no-store'})
+          .then(function(r){ return r.text(); })
+          .then(function(html){
+            var m = html.match(/APP_VERSION\s*=\s*'([^']+)'/);
+            if(m && m[1] && m[1] !== APP_VERSION){
+              location.href = location.pathname + '?v=' + Date.now();
+            }
+          })
+          .catch(function(){ /* sin conexión: seguimos con la copia actual */ });
+      }catch(e){}
+    }
+    checkForUpdate();
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState === 'visible') checkForUpdate();
+    });
+  })();
+</script>
+
+<script>
 (function(){
   const LS_PRODUCTOS = 'pr_productos_v2';
   const LS_PEDIDO = 'pr_pedido';
   const LS_REGISTROS = 'pr_registros';
   const LS_SALDO = 'pr_saldo';
+  const LS_CLIENTE = 'pr_cliente';
   const BIZ_NAME = 'Distribuidora Don Picconi';
 
   // Catálogo fijo: los nombres no se editan, sólo el precio (en Precios).
@@ -1005,6 +1117,7 @@
   let pedido = JSON.parse(localStorage.getItem(LS_PEDIDO) || 'null') || [];
   let registros = JSON.parse(localStorage.getItem(LS_REGISTROS) || 'null') || [];
   let saldoState = JSON.parse(localStorage.getItem(LS_SALDO) || 'null') || {incluido:false, anterior:0, entregado:0};
+  let clienteState = JSON.parse(localStorage.getItem(LS_CLIENTE) || 'null') || {incluido:false, nombre:''};
   const bizName = BIZ_NAME;
   let seleccionado = null;
 
@@ -1033,6 +1146,7 @@
   function savePedido(){ localStorage.setItem(LS_PEDIDO, JSON.stringify(pedido)); }
   function saveRegistros(){ localStorage.setItem(LS_REGISTROS, JSON.stringify(registros)); }
   function saveSaldo(){ localStorage.setItem(LS_SALDO, JSON.stringify(saldoState)); }
+  function saveCliente(){ localStorage.setItem(LS_CLIENTE, JSON.stringify(clienteState)); }
 
   function archivarPedidoActual(){
     if(pedido.length === 0 && !saldoState.incluido) return;
@@ -1042,6 +1156,7 @@
       id: uid(),
       fecha: new Date().toISOString(),
       bizName: bizName,
+      nombreCliente: clienteState.incluido ? clienteState.nombre.trim() : '',
       items: pedido.map(it=>({nombre:it.nombre, precio:it.precio, cantidad:it.cantidad})),
       total: totalProductos,
       saldoIncluido: saldoState.incluido,
@@ -1067,6 +1182,26 @@
     document.getElementById('inpSaldoAnterior').value = formatMiles(saldoState.anterior);
     document.getElementById('inpEntregado').value = formatMiles(saldoState.entregado);
   }
+
+  function renderClienteCard(){
+    const toggle = document.getElementById('toggleCliente');
+    const detalle = document.getElementById('clienteDetalle');
+    toggle.classList.toggle('active', clienteState.incluido);
+    detalle.style.display = clienteState.incluido ? 'block' : 'none';
+    document.getElementById('inpCliente').value = clienteState.nombre || '';
+  }
+
+  document.getElementById('toggleCliente').addEventListener('click', ()=>{
+    clienteState.incluido = !clienteState.incluido;
+    saveCliente();
+    renderClienteCard();
+    renderTicket();
+  });
+  document.getElementById('inpCliente').addEventListener('input', (e)=>{
+    clienteState.nombre = e.target.value;
+    saveCliente();
+    renderTicket();
+  });
 
   document.getElementById('toggleSaldoPendiente').addEventListener('click', ()=>{
     saldoState.incluido = !saldoState.incluido;
@@ -1284,6 +1419,11 @@
     document.getElementById('ticketDate').textContent = new Date().toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
     document.getElementById('bizLabel').textContent = bizName || '';
 
+    const filaCliente = document.getElementById('ticketCliente');
+    const mostrarCliente = clienteState.incluido && clienteState.nombre && clienteState.nombre.trim();
+    filaCliente.style.display = mostrarCliente ? 'block' : 'none';
+    if(mostrarCliente) filaCliente.textContent = 'Cliente: ' + clienteState.nombre.trim();
+
     const mostrarSeccionSaldo = saldoState.incluido;
     const mostrarSaldoAnterior = saldoState.incluido && saldoState.anterior !== 0;
     const mostrarEntregado = saldoState.incluido && saldoState.entregado !== 0;
@@ -1322,13 +1462,16 @@
   }
 
   document.getElementById('btnNuevo').addEventListener('click', ()=>{
-    if(pedido.length === 0 && !saldoState.incluido) return;
+    if(pedido.length === 0 && !saldoState.incluido && !clienteState.incluido) return;
     showConfirm('¿Borrar y empezar uno nuevo?', ()=>{
       pedido = [];
       savePedido();
       saldoState = {incluido:false, anterior:0, entregado:0};
       saveSaldo();
+      clienteState = {incluido:false, nombre:''};
+      saveCliente();
       renderSaldoCard();
+      renderClienteCard();
       renderTicket();
       showToast('Presupuesto borrado');
     });
@@ -1406,6 +1549,8 @@
           </div>
         `).join('');
 
+    const mostrarCliente = r.nombreCliente && r.nombreCliente.trim();
+
     const wrap = document.createElement('div');
     wrap.className = 'ticket';
     wrap.style.width = '448px';
@@ -1413,6 +1558,7 @@
       <div class="t-head">
         <div class="t-biz">${escapeHtml(r.bizName || 'Presupuesto')}</div>
         <div class="t-date">${fechaTicket}</div>
+        ${mostrarCliente ? `<div class="t-cliente">Cliente: ${escapeHtml(r.nombreCliente.trim())}</div>` : ''}
       </div>
       <div class="t-saldo-anterior" style="display:${mostrarSaldoAnterior ? 'flex' : 'none'};">
         <span>Saldo Anterior</span>
@@ -1508,6 +1654,9 @@
       const mostrarSaldoAnteriorR = r.saldoIncluido && r.saldoAnterior;
       const mostrarEntregadoR = !!r.entregado;
       const mostrarSaldoPendienteR = r.saldoIncluido || mostrarEntregadoR;
+      const clienteHtml = (r.nombreCliente && r.nombreCliente.trim())
+        ? `<div class="ri-item"><span>Cliente</span><span class="ri-sub">${escapeHtml(r.nombreCliente.trim())}</span></div>`
+        : '';
       const saldoHtml = (mostrarSaldoAnteriorR || mostrarEntregadoR || mostrarSaldoPendienteR) ? `
         <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);">
           ${mostrarSaldoAnteriorR ? `<div class="ri-item"><span>Saldo Anterior</span><span class="ri-sub">${money(r.saldoAnterior)}</span></div>` : ''}
@@ -1527,6 +1676,7 @@
           </div>
         </div>
         <div class="registro-items">
+          ${clienteHtml}
           ${itemsHtml}
           ${saldoHtml}
           <div class="ri-del-row">
@@ -1597,6 +1747,7 @@
   renderQuickGrid();
   renderSelector();
   renderSaldoCard();
+  renderClienteCard();
   renderTicket();
 })();
 </script>
