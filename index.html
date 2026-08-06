@@ -17,7 +17,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root{
@@ -54,7 +54,7 @@
     justify-content:space-between;
   }
   header.top h1{
-    font-family:'Fraunces',serif;
+    font-family:'Inter',sans-serif;
     font-weight:800;
     font-size:22px;
     margin:0;
@@ -140,6 +140,17 @@
     display:block;
     margin-top:2px;
   }
+  .quick-btn .q-stock{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    color:var(--ink-soft);
+    display:block;
+    margin-top:1px;
+  }
+  .quick-btn .q-stock.low{
+    color:var(--red);
+    font-weight:700;
+  }
   .quick-empty{
     grid-column:1/-1;
     text-align:center;
@@ -160,7 +171,7 @@
     box-shadow:0 1px 2px rgba(30,42,31,0.06);
   }
   .selector-card .sel-name{
-    font-family:'Fraunces',serif;
+    font-family:'Inter',sans-serif;
     font-weight:700;
     font-size:19px;
   }
@@ -186,7 +197,7 @@
     background:var(--bg);
     border-radius:999px;
     padding:12px 38px 12px 20px;
-    font-family:'Fraunces',serif;
+    font-family:'Inter',sans-serif;
     font-weight:700;
     font-size:16px;
     color:var(--ink);
@@ -200,6 +211,13 @@
     background-size:15px;
   }
   .producto-select:focus{outline:none; border-color:var(--accent);}
+  /* Fuente de las opciones del desplegable = misma que "Productos rápidos", para mejor lectura */
+  .producto-select option{
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:13.5px;
+    color:var(--ink);
+  }
   .stepper-center{
     display:flex;
     justify-content:center;
@@ -250,6 +268,16 @@
     color:var(--accent-dark);
     margin-top:2px;
   }
+  .price-total .stock-disp{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:4px;
+  }
+  .price-total .stock-disp.low{
+    color:var(--red);
+    font-weight:700;
+  }
   .add-btn{
     width:100%;
     margin-top:18px;
@@ -280,7 +308,7 @@
     margin-bottom:12px;
   }
   .ticket .t-biz{
-    font-family:'Fraunces',serif;
+    font-family:'Inter',sans-serif;
     font-weight:800;
     font-size:17px;
   }
@@ -401,7 +429,68 @@
   }
   .btn-new:active{background:#FBEAE8;}
 
-  /* ---- Precios tab ---- */
+  /* ---- Productos tab (Precios + Stock unificados) ---- */
+  .productos-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:0 12px;
+    margin:0 0 8px;
+  }
+  .productos-header span{
+    font-weight:700;
+    font-size:12.5px;
+    color:var(--ink);
+  }
+  .productos-header .ph-producto{flex:1;}
+  .productos-header .ph-stock{width:78px; text-align:center;}
+  .productos-header .ph-precio{width:88px; text-align:center;}
+  .producto-row{
+    background:var(--surface);
+    border-radius:12px;
+    padding:10px 12px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .producto-row .p-name{
+    flex:1;
+    min-width:0;
+    font-weight:600;
+    font-size:14.5px;
+  }
+  .producto-row .price-field{
+    display:flex;
+    align-items:center;
+    background:var(--bg);
+    border-radius:8px;
+    padding:0 6px;
+    flex-shrink:0;
+  }
+  .producto-row .price-field span{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .producto-row .price-field .price-input{
+    border:none;
+    background:transparent;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:14px;
+    color:var(--ink);
+    padding:8px 4px;
+    -webkit-appearance:none;
+    appearance:none;
+    -webkit-tap-highlight-color:transparent;
+    outline:none;
+    box-shadow:none;
+  }
+  .producto-row .stock-field .price-input{width:74px; text-align:center;}
+  .producto-row .precio-field .price-input{width:64px; text-align:center;}
+  .producto-row input:focus{outline:none; box-shadow:none;}
+
   .biz-input-wrap{
     background:var(--surface);
     border-radius:var(--radius);
@@ -420,7 +509,7 @@
     border:none;
     border-bottom:1.5px solid var(--line);
     padding:8px 2px;
-    font-family:'Fraunces',serif;
+    font-family:'Inter',sans-serif;
     font-weight:700;
     font-size:16px;
     color:var(--ink);
@@ -687,7 +776,7 @@
     box-shadow:0 12px 30px rgba(0,0,0,0.25);
   }
   .confirm-card .c-title{
-    font-family:'Fraunces',serif;
+    font-family:'Inter',sans-serif;
     font-weight:700;
     font-size:17px;
     margin:0 0 8px;
@@ -913,7 +1002,7 @@
 
   <nav class="tabs">
     <button class="tab active" data-tab="ventas">Ventas</button>
-    <button class="tab" data-tab="precios">Precios</button>
+    <button class="tab" data-tab="productos">Productos</button>
     <button class="tab" data-tab="registros">Registros</button>
   </nav>
 
@@ -936,6 +1025,7 @@
       <div class="price-total">
         <div class="u" id="precioUnit">—</div>
         <div class="t" id="totalActual">$ 0</div>
+        <div class="stock-disp" id="stockDisp" style="display:none;"></div>
       </div>
       <button class="add-btn" id="btnAgregar" disabled>Agregar al presupuesto</button>
     </div>
@@ -1014,11 +1104,16 @@
     </div>
   </section>
 
-  <!-- PRECIOS -->
-  <section class="panel" id="panel-precios">
-    <p class="section-label">Lista de precios</p>
-    <p style="font-size:12.5px; color:var(--ink-soft); margin:-6px 2px 14px;">Tocá el precio de cada producto para editarlo.</p>
-    <div id="preciosList"></div>
+  <!-- PRODUCTOS -->
+  <section class="panel" id="panel-productos">
+    <p class="section-label">Productos</p>
+    <p style="font-size:12.5px; color:var(--ink-soft); margin:-6px 2px 14px;">Tocá el stock o el precio de cada producto para editarlo. <br> El stock se descuenta al tocar "Registrar", y se devuelve si borrás un registro.</p>
+    <div class="productos-header">
+      <span class="ph-producto">Producto</span>
+      <span class="ph-stock">Stock</span>
+      <span class="ph-precio">Precio</span>
+    </div>
+    <div id="productosList"></div>
   </section>
 
   <!-- REGISTROS -->
@@ -1060,7 +1155,7 @@
   // se cargó (aunque sea desde una copia vieja guardada en caché), la detecta
   // y recarga la página automáticamente para traer la última versión.
   (function(){
-    var APP_VERSION = '2026-08-03.1';
+    var APP_VERSION = '2026-08-06.1';
     function checkForUpdate(){
       try{
         fetch(location.pathname + '?_check=' + Date.now(), {cache:'no-store'})
@@ -1085,15 +1180,16 @@
   const LS_REGISTROS = 'pr_registros';
   const LS_SALDO = 'pr_saldo';
   const LS_CLIENTE = 'pr_cliente';
+  const LS_STOCK = 'pr_stock';
   const BIZ_NAME = 'Distribuidora Don Picconi';
 
-  // Catálogo fijo: los nombres no se editan, sólo el precio (en Precios).
+  // Catálogo fijo: los nombres no se editan, sólo el precio (en Productos).
   const catalogoBase = [
-    {id:'p1', nombre:'Cajón Pollo', precio:63000},
-    {id:'p2', nombre:'Unidad Pollo', precio:3150},
-    {id:'p3', nombre:'Cuartos', precio:2950},
+    {id:'p1', nombre:'Cajón Pollo', precio:65000},
+    {id:'p2', nombre:'Unidad Pollo', precio:3250},
+    {id:'p3', nombre:'Cuartos', precio:3000},
     {id:'p4', nombre:'Filet de Muslo', precio:6100},
-    {id:'p5', nombre:'Alas', precio:2650},
+    {id:'p5', nombre:'Alas', precio:2600},
     {id:'p6', nombre:'Pechuga', precio:6600},
     {id:'p7', nombre:'Pechuga B', precio:5800},
     {id:'p8', nombre:'Pechuguín', precio:5800},
@@ -1115,6 +1211,13 @@
   let registros = JSON.parse(localStorage.getItem(LS_REGISTROS) || 'null') || [];
   let saldoState = JSON.parse(localStorage.getItem(LS_SALDO) || 'null') || {incluido:false, anterior:0, entregado:0};
   let clienteState = JSON.parse(localStorage.getItem(LS_CLIENTE) || 'null') || {incluido:false, nombre:''};
+  // Stock: objeto {productoId: cantidadDisponible}. Todos los productos arrancan
+  // con stock 0 por defecto (se ve y se puede editar desde la pestaña "Productos").
+  let stockState = JSON.parse(localStorage.getItem(LS_STOCK) || 'null') || {};
+  catalogoBase.forEach(p=>{
+    if(!Object.prototype.hasOwnProperty.call(stockState, p.id)) stockState[p.id] = 0;
+  });
+  localStorage.setItem(LS_STOCK, JSON.stringify(stockState));
   const bizName = BIZ_NAME;
   let seleccionado = null;
 
@@ -1144,17 +1247,43 @@
   function saveRegistros(){ localStorage.setItem(LS_REGISTROS, JSON.stringify(registros)); }
   function saveSaldo(){ localStorage.setItem(LS_SALDO, JSON.stringify(saldoState)); }
   function saveCliente(){ localStorage.setItem(LS_CLIENTE, JSON.stringify(clienteState)); }
+  function saveStock(){ localStorage.setItem(LS_STOCK, JSON.stringify(stockState)); }
+
+  // Descuenta stock por los ítems de un presupuesto (se llama al Registrar).
+  // Sólo afecta productos que ya tienen stock cargado; el resto no se toca.
+  function descontarStock(items){
+    let huboCambios = false;
+    items.forEach(it=>{
+      if(it.productoId && Object.prototype.hasOwnProperty.call(stockState, it.productoId)){
+        stockState[it.productoId] = (Number(stockState[it.productoId])||0) - it.cantidad;
+        huboCambios = true;
+      }
+    });
+    if(huboCambios) saveStock();
+  }
+  // Devuelve stock por los ítems de un registro eliminado.
+  function restaurarStock(items){
+    let huboCambios = false;
+    items.forEach(it=>{
+      if(it.productoId && Object.prototype.hasOwnProperty.call(stockState, it.productoId)){
+        stockState[it.productoId] = (Number(stockState[it.productoId])||0) + it.cantidad;
+        huboCambios = true;
+      }
+    });
+    if(huboCambios) saveStock();
+  }
 
   function archivarPedidoActual(){
     if(pedido.length === 0 && !saldoState.incluido) return;
     const totalProductos = pedido.reduce((s,it)=> s + it.precio*it.cantidad, 0);
     const saldoPendiente = calcularSaldoPendiente();
+    const itemsRegistro = pedido.map(it=>({productoId: it.productoId, nombre:it.nombre, precio:it.precio, cantidad:it.cantidad}));
     registros.unshift({
       id: uid(),
       fecha: new Date().toISOString(),
       bizName: bizName,
       nombreCliente: clienteState.incluido ? clienteState.nombre.trim() : '',
-      items: pedido.map(it=>({nombre:it.nombre, precio:it.precio, cantidad:it.cantidad})),
+      items: itemsRegistro,
       total: totalProductos,
       saldoIncluido: saldoState.incluido,
       saldoAnterior: saldoState.incluido ? saldoState.anterior : 0,
@@ -1162,6 +1291,9 @@
       saldoPendiente: saldoPendiente
     });
     saveRegistros();
+    descontarStock(itemsRegistro);
+    renderQuickGrid();
+    if(seleccionado) renderSelector();
   }
 
   // ---------- Saldo (Anterior / Entregado / Actual) ----------
@@ -1239,12 +1371,17 @@
     return n.toLocaleString('es-AR', {maximumFractionDigits:2});
   }
   function parseCantidad(str){
-    let s = String(str).replace(',', '.');
+    let s = String(str).replace(/\./g, ''); // quita el separador de miles
+    s = s.replace(',', '.'); // coma decimal -> punto
     s = s.replace(/[^0-9.]/g, '');
     const partes = s.split('.');
     if(partes.length > 2) s = partes[0] + '.' + partes.slice(1).join('');
     const n = parseFloat(s);
     return isNaN(n) ? 0 : n;
+  }
+  function parseMilesLimit(str, maxDigits){
+    const digits = String(str).replace(/\D/g, '').slice(0, maxDigits);
+    return Number(digits) || 0;
   }
 
   function uid(){ return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
@@ -1256,7 +1393,7 @@
       document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
-      if(btn.dataset.tab === 'precios') renderPrecios();
+      if(btn.dataset.tab === 'productos') renderProductos();
       if(btn.dataset.tab === 'registros') renderRegistros();
     });
   });
@@ -1266,7 +1403,7 @@
     const grid = document.getElementById('quickGrid');
     grid.innerHTML = '';
     if(productos.length === 0){
-      grid.innerHTML = '<div class="quick-empty">No hay productos cargados.<br>Andá a la pestaña "Precios" para agregar.</div>';
+      grid.innerHTML = '<div class="quick-empty">No hay productos cargados.<br>Andá a la pestaña "Productos" para agregar.</div>';
       return;
     }
     filasRapidas.forEach(idsFila=>{
@@ -1277,7 +1414,11 @@
         if(!p) return;
         const btn = document.createElement('div');
         btn.className = 'quick-btn' + (seleccionado && seleccionado.id === p.id ? ' selected' : '');
-        btn.innerHTML = `<span class="q-name">${escapeHtml(p.nombre)}</span><span class="q-price">${money(p.precio)}</span>`;
+        const tieneStock = Object.prototype.hasOwnProperty.call(stockState, p.id);
+        const stockHtml = tieneStock
+          ? `<span class="q-stock${stockState[p.id] <= 0 ? ' low' : ''}">Stock: ${formatCantidad(stockState[p.id])}</span>`
+          : '';
+        btn.innerHTML = `<span class="q-name">${escapeHtml(p.nombre)}</span><span class="q-price">${money(p.precio)}</span>${stockHtml}`;
         btn.addEventListener('click', ()=> selectProduct(p.id));
         row.appendChild(btn);
       });
@@ -1313,16 +1454,26 @@
     const precioUnit = document.getElementById('precioUnit');
     const totalActual = document.getElementById('totalActual');
     const btnAgregar = document.getElementById('btnAgregar');
+    const stockDisp = document.getElementById('stockDisp');
     if(!seleccionado){
       precioUnit.textContent = '—';
       totalActual.textContent = '$ 0';
       btnAgregar.disabled = true;
+      stockDisp.style.display = 'none';
       return;
     }
     const cant = parseCantidad(document.getElementById('cantidad').value)||1;
     precioUnit.textContent = money(seleccionado.precio) + ' c/u';
     totalActual.textContent = money(seleccionado.precio * cant);
     btnAgregar.disabled = false;
+    if(Object.prototype.hasOwnProperty.call(stockState, seleccionado.id)){
+      const disp = stockState[seleccionado.id];
+      stockDisp.textContent = 'Stock disponible: ' + formatCantidad(disp);
+      stockDisp.classList.toggle('low', disp <= 0);
+      stockDisp.style.display = '';
+    } else {
+      stockDisp.style.display = 'none';
+    }
   }
 
   document.getElementById('menos').addEventListener('click', ()=>{
@@ -1596,27 +1747,56 @@
     document.body.style.overflow = '';
   });
 
-  // ---------- Precios tab (sólo precio editable) ----------
-  function renderPrecios(){
-    const list = document.getElementById('preciosList');
+  // ---------- Productos tab (Precio y Stock editables juntos) ----------
+  function renderProductos(){
+    const list = document.getElementById('productosList');
     list.innerHTML = '';
     productos.forEach(p=>{
       const row = document.createElement('div');
-      row.className = 'price-row';
+      row.className = 'producto-row';
+      const cant = Object.prototype.hasOwnProperty.call(stockState, p.id) ? stockState[p.id] : 0;
       row.innerHTML = `
-        <span style="flex:1; font-weight:600; font-size:14.5px;">${escapeHtml(p.nombre)}</span>
-        <div class="price-field">
+        <span class="p-name">${escapeHtml(p.nombre)}</span>
+        <div class="price-field stock-field">
+          <input type="text" class="price-input stock-input" value="${formatCantidad(cant)}" data-id="${p.id}" inputmode="decimal" pattern="[0-9,]*">
+        </div>
+        <div class="price-field precio-field">
           <span>$</span>
-          <input type="text" class="price-input" value="${formatMiles(p.precio)}" data-id="${p.id}" inputmode="numeric" pattern="[0-9.]*">
+          <input type="text" class="price-input precio-input" value="${formatMiles(p.precio)}" data-id="${p.id}" inputmode="numeric" pattern="[0-9.]*">
         </div>
       `;
       list.appendChild(row);
     });
-    list.querySelectorAll('input').forEach(inp=>{
+    list.querySelectorAll('.stock-input').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        // mientras se escribe: limpia caracteres inválidos, limita a 4 dígitos enteros + 2 decimales,
+        // y aplica separador de miles dinámico (igual que Precio)
+        let v = inp.value.replace(/[^0-9,]/g, '');
+        const partes = v.split(',');
+        const intPart = partes[0].slice(0, 4);
+        let out = intPart ? Number(intPart).toLocaleString('es-AR') : '';
+        if(partes.length > 1){
+          const decPart = partes.slice(1).join('').slice(0, 2);
+          out += ',' + decPart;
+        }
+        inp.value = out;
+      });
+      inp.addEventListener('change', ()=>{
+        const id = inp.dataset.id;
+        let val = parseCantidad(inp.value);
+        if(val < 0) val = 0;
+        stockState[id] = val;
+        inp.value = formatCantidad(val);
+        saveStock();
+        renderQuickGrid();
+        if(seleccionado && seleccionado.id === id) renderSelector();
+      });
+    });
+    list.querySelectorAll('.precio-input').forEach(inp=>{
       inp.addEventListener('input', ()=>{
         const p = productos.find(x=>x.id === inp.dataset.id);
         if(!p) return;
-        const raw = parseMiles(inp.value);
+        const raw = parseMilesLimit(inp.value, 5);
         inp.value = raw ? formatMiles(raw) : '';
         p.precio = raw;
         saveProductos();
@@ -1693,9 +1873,13 @@
       btn.addEventListener('click', (e)=>{
         e.stopPropagation();
         showConfirm('¿Eliminar este presupuesto guardado?', ()=>{
+          const r = registros.find(x=>x.id === btn.dataset.id);
           registros = registros.filter(r=>r.id !== btn.dataset.id);
           saveRegistros();
+          if(r) restaurarStock(r.items);
           renderRegistros();
+          renderQuickGrid();
+          if(seleccionado) renderSelector();
         });
       });
     });
@@ -1717,9 +1901,12 @@
   document.getElementById('btnVaciarRegistros').addEventListener('click', ()=>{
     if(registros.length === 0) return;
     showConfirm('¿Borrar todo el historial de Registros? Esto no se puede deshacer.', ()=>{
+      registros.forEach(r=> restaurarStock(r.items));
       registros = [];
       saveRegistros();
       renderRegistros();
+      renderQuickGrid();
+      if(seleccionado) renderSelector();
       showToast('Historial vaciado');
     });
   });
