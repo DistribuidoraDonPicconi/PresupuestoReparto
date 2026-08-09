@@ -917,6 +917,49 @@
     margin-bottom:18px;
     box-shadow:0 1px 2px rgba(30,42,31,0.06);
   }
+  .config-card{
+    background:var(--surface);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:16px;
+    box-shadow:0 1px 2px rgba(30,42,31,0.06);
+  }
+  .config-card .toggle-btn{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:11px 12px;
+    cursor:pointer;
+    transition:border-color .12s ease, background .12s ease;
+  }
+  .config-card .toggle-btn:active{transform:scale(0.99);}
+  .config-card .toggle-btn.active{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .config-card .toggle-btn .tb-check{
+    width:18px; height:18px;
+    border-radius:5px;
+    border:1.5px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:12px;
+    color:transparent;
+    background:var(--bg);
+    flex-shrink:0;
+  }
+  .config-card .toggle-btn.active .tb-check{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+  }
+  .config-card .toggle-btn .tb-label{
+    font-weight:600;
+    font-size:14px;
+  }
   .cliente-card .toggle-btn{
     display:flex;
     align-items:center;
@@ -1119,6 +1162,12 @@
   <section class="panel" id="panel-productos">
     <p class="section-label">Productos</p>
     <p style="font-size:12.5px; color:var(--ink-soft); margin:-6px 2px 14px;">Tocá el stock o el precio de cada producto para editarlo. <br> El stock se descuenta al tocar "Registrar", y se devuelve si borrás un registro.</p>
+    <div class="config-card">
+      <div class="toggle-btn" id="toggleMostrarStock">
+        <span class="tb-check">✓</span>
+        <span class="tb-label">Mostrar Stock en Ventas</span>
+      </div>
+    </div>
     <div class="productos-header">
       <span class="ph-producto">Producto</span>
       <span class="ph-stock">Stock</span>
@@ -1192,6 +1241,7 @@
   const LS_SALDO = 'pr_saldo';
   const LS_CLIENTE = 'pr_cliente';
   const LS_STOCK = 'pr_stock';
+  const LS_CONFIG = 'pr_config';
   const BIZ_NAME = 'Distribuidora Don Picconi';
 
   // Catálogo fijo: los nombres no se editan, sólo el precio (en Productos).
@@ -1229,6 +1279,9 @@
     if(!Object.prototype.hasOwnProperty.call(stockState, p.id)) stockState[p.id] = 0;
   });
   localStorage.setItem(LS_STOCK, JSON.stringify(stockState));
+  // Config: por ahora, sólo si se muestra el Stock en la pantalla "Ventas" (activado por defecto).
+  let configState = JSON.parse(localStorage.getItem(LS_CONFIG) || 'null') || {mostrarStockVentas: true};
+  function saveConfig(){ localStorage.setItem(LS_CONFIG, JSON.stringify(configState)); }
   const bizName = BIZ_NAME;
   let seleccionado = null;
 
@@ -1343,6 +1396,19 @@
     renderTicket();
   });
 
+  function renderConfigCard(){
+    const toggle = document.getElementById('toggleMostrarStock');
+    toggle.classList.toggle('active', configState.mostrarStockVentas);
+  }
+
+  document.getElementById('toggleMostrarStock').addEventListener('click', ()=>{
+    configState.mostrarStockVentas = !configState.mostrarStockVentas;
+    saveConfig();
+    renderConfigCard();
+    renderQuickGrid();
+    renderSelector();
+  });
+
   document.getElementById('toggleSaldoPendiente').addEventListener('click', ()=>{
     saldoState.incluido = !saldoState.incluido;
     saveSaldo();
@@ -1404,7 +1470,7 @@
       document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
-      if(btn.dataset.tab === 'productos') renderProductos();
+      if(btn.dataset.tab === 'productos') { renderProductos(); renderConfigCard(); }
       if(btn.dataset.tab === 'registros') renderRegistros();
     });
   });
@@ -1425,7 +1491,7 @@
         if(!p) return;
         const btn = document.createElement('div');
         btn.className = 'quick-btn' + (seleccionado && seleccionado.id === p.id ? ' selected' : '');
-        const tieneStock = Object.prototype.hasOwnProperty.call(stockState, p.id);
+        const tieneStock = configState.mostrarStockVentas && Object.prototype.hasOwnProperty.call(stockState, p.id);
         const stockHtml = tieneStock
           ? `<span class="q-stock${stockState[p.id] <= 0 ? ' low' : ''}">Stock: ${formatCantidad(stockState[p.id])}</span>`
           : '';
@@ -1477,7 +1543,7 @@
     precioUnit.textContent = money(seleccionado.precio) + ' c/u';
     totalActual.textContent = money(seleccionado.precio * cant);
     btnAgregar.disabled = false;
-    if(Object.prototype.hasOwnProperty.call(stockState, seleccionado.id)){
+    if(configState.mostrarStockVentas && Object.prototype.hasOwnProperty.call(stockState, seleccionado.id)){
       const disp = stockState[seleccionado.id];
       stockDisp.textContent = 'Stock disponible: ' + formatCantidad(disp);
       stockDisp.classList.toggle('low', disp <= 0);
@@ -1943,6 +2009,7 @@
   renderSelector();
   renderSaldoCard();
   renderClienteCard();
+  renderConfigCard();
   renderTicket();
 })();
 </script>
