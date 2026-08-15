@@ -1194,7 +1194,7 @@
   <img id="modalImg" alt="Presupuesto">
   <p class="hint">Mantén presionada la imagen para guardar o compartir con el cliente</p>
   <div class="img-modal-actions">
-    <button class="sh" id="shareBtn">Compartir</button>
+    <button class="sh" id="shareBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px; margin-right:4px;"><path d="M17.472 14.382c-.297-.149-1.758-.868-2.03-.967-.273-.099-.472-.148-.67.15-.198.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.99.583 3.845 1.588 5.405L2 22l4.735-1.552A9.947 9.947 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.222a8.19 8.19 0 0 1-4.19-1.148l-.3-.179-3.12 1.023 1.04-3.03-.196-.312A8.185 8.185 0 0 1 3.778 12c0-4.535 3.687-8.222 8.222-8.222S20.222 7.465 20.222 12 16.535 20.222 12 20.222z"/></svg>Compartir</button>
     <a class="dl" id="downloadLink" download="presupuesto.png">Descargar</a>
   </div>
 </div>
@@ -1246,9 +1246,9 @@
 
   // Catálogo fijo: los nombres no se editan, sólo el precio (en Productos).
   const catalogoBase = [
-    {id:'p1', nombre:'Cajón Pollo', precio:65000},
-    {id:'p2', nombre:'Unidad Pollo', precio:3250},
-    {id:'p3', nombre:'Cuartos', precio:3000},
+    {id:'p1', nombre:'Cajón Pollo', precio:67000},
+    {id:'p2', nombre:'Unidad Pollo', precio:3350},
+    {id:'p3', nombre:'Cuartos', precio:3100},
     {id:'p4', nombre:'Filet de Muslo', precio:6100},
     {id:'p5', nombre:'Alas', precio:2600},
     {id:'p6', nombre:'Pechuga', precio:6600},
@@ -1280,7 +1280,7 @@
   });
   localStorage.setItem(LS_STOCK, JSON.stringify(stockState));
   // Config: por ahora, sólo si se muestra el Stock en la pantalla "Ventas" (activado por defecto).
-  let configState = JSON.parse(localStorage.getItem(LS_CONFIG) || 'null') || {mostrarStockVentas: true};
+  let configState = JSON.parse(localStorage.getItem(LS_CONFIG) || 'null') || {mostrarStockVentas: false};
   function saveConfig(){ localStorage.setItem(LS_CONFIG, JSON.stringify(configState)); }
   const bizName = BIZ_NAME;
   let seleccionado = null;
@@ -1702,9 +1702,28 @@
     });
   });
 
-  // Genera una imagen a partir de un elemento tipo .ticket y la muestra en el modal,
-  // dejando listo el botón de compartir nativo si está disponible.
-  async function generarYMostrarImagen(el){
+  // Nombre de archivo con fecha, sin caracteres raros.
+  function fechaParaArchivo(){
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  // Genera una imagen a partir de un elemento tipo .ticket y la muestra en el modal.
+  // Usa toBlob()+ObjectURL (en vez de toDataURL) para no cargar la imagen entera en
+  // base64: más liviano en memoria, sobre todo con scale:2 en celulares modestos.
+  let modalObjectUrl = null;
+  let modalBlobActual = null;
+  let modalNombreArchivo = 'presupuesto.png';
+
+  function liberarImagenModal(){
+    if(modalObjectUrl){ URL.revokeObjectURL(modalObjectUrl); modalObjectUrl = null; }
+    modalBlobActual = null;
+  }
+
+  async function generarYMostrarImagen(el, nombreArchivo){
     if(typeof html2canvas === 'undefined'){
       showToast('Necesitás conexión a internet la primera vez');
       return false;
@@ -1714,22 +1733,21 @@
     try{
       const canvas = await html2canvas(el, {backgroundColor:'#FFFFFF', scale:2, useCORS:true, allowTaint:true});
       delBtns.forEach(b=> b.style.visibility = '');
-      const dataUrl = canvas.toDataURL('image/png');
-      document.getElementById('modalImg').src = dataUrl;
-      document.getElementById('downloadLink').href = dataUrl;
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      if(!blob){ showToast('No se pudo generar la imagen'); return false; }
+
+      liberarImagenModal();
+      modalObjectUrl = URL.createObjectURL(blob);
+      modalBlobActual = blob;
+      modalNombreArchivo = nombreArchivo || 'presupuesto.png';
+
+      document.getElementById('modalImg').src = modalObjectUrl;
+      const dl = document.getElementById('downloadLink');
+      dl.href = modalObjectUrl;
+      dl.download = modalNombreArchivo;
       document.getElementById('imgModal').classList.add('show');
       document.body.style.overflow = 'hidden';
-
-      canvas.toBlob((blob)=>{
-        const shareBtn = document.getElementById('shareBtn');
-        const file = blob ? new File([blob], 'presupuesto.png', {type:'image/png'}) : null;
-        const canShare = file && navigator.canShare && navigator.canShare({files:[file]});
-        shareBtn.style.display = canShare ? '' : 'none';
-        shareBtn.onclick = async ()=>{
-          try{ await navigator.share({files:[file], title:'Presupuesto'}); }
-          catch(e){ /* usuario canceló */ }
-        };
-      }, 'image/png');
       return true;
     }catch(err){
       delBtns.forEach(b=> b.style.visibility = '');
@@ -1738,13 +1756,26 @@
     }
   }
 
+  document.getElementById('shareBtn').addEventListener('click', async ()=>{
+    if(!modalBlobActual) return;
+    const file = new File([modalBlobActual], modalNombreArchivo, {type:'image/png'});
+    // Compartir nativo con imagen adjunta (celular: abre WhatsApp entre las opciones).
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file], title:'Presupuesto'}); }
+      catch(e){ /* usuario canceló, no hacemos nada */ }
+      return;
+    }
+    // En PC no existe forma de adjuntar la imagen directo a WhatsApp Web/Desktop.
+    alert('En la computadora no se puede enviar la imagen directo a WhatsApp. Tocá "Descargar" y después adjuntala manualmente en WhatsApp Web o Desktop.');
+  });
+
   document.getElementById('btnCopiar').addEventListener('click', async ()=>{
     if(pedido.length === 0 && !saldoState.incluido){ showToast('Agregá productos primero'); return; }
     const btn = document.getElementById('btnCopiar');
     const originalHtml = btn.innerHTML;
     btn.textContent = '⏳ Generando...';
     btn.disabled = true;
-    await generarYMostrarImagen(document.getElementById('ticketCapture'));
+    await generarYMostrarImagen(document.getElementById('ticketCapture'), `presupuesto-${fechaParaArchivo()}.png`);
     btn.innerHTML = originalHtml;
     btn.disabled = false;
   });
@@ -1815,13 +1846,14 @@
     const ticketEl = construirTicketDesdeRegistro(r);
     contenedor.appendChild(ticketEl);
     document.body.appendChild(contenedor);
-    await generarYMostrarImagen(ticketEl);
+    await generarYMostrarImagen(ticketEl, `presupuesto-${fechaParaArchivo()}.png`);
     document.body.removeChild(contenedor);
   }
 
   document.getElementById('closeModal').addEventListener('click', ()=>{
     document.getElementById('imgModal').classList.remove('show');
     document.body.style.overflow = '';
+    liberarImagenModal();
   });
 
   // ---------- Productos tab (Precio y Stock editables juntos) ----------
