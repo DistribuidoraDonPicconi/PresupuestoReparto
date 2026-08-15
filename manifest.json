@@ -1,6 +1,6 @@
 {
-  "name": "Presupuesto Rápido",
-  "short_name": "Presupuesto",
+  "name": "Ventas DP",
+  "short_name": "Ventas DP",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
