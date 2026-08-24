@@ -1092,7 +1092,7 @@
       </div>
       <div class="cliente-detalle" id="clienteDetalle" style="display:none;">
         <div class="cliente-field">
-          <input type="text" id="inpCliente" placeholder="Nombre del cliente" maxlength="60">
+          <input type="text" id="inpCliente" placeholder="Nombre del cliente" maxlength="22">
         </div>
       </div>
     </div>
@@ -1108,14 +1108,14 @@
             <label>Saldo Anterior</label>
             <div class="price-field">
               <span>$</span>
-              <input type="text" id="inpSaldoAnterior" value="0" inputmode="numeric" pattern="[0-9.]*">
+              <input type="text" id="inpSaldoAnterior" value="0" inputmode="decimal" pattern="[0-9,]*">
             </div>
           </div>
           <div class="saldo-field">
             <label>Pago Recibido</label>
             <div class="price-field">
               <span>$</span>
-              <input type="text" id="inpEntregado" value="0" inputmode="numeric" pattern="[0-9.]*">
+              <input type="text" id="inpEntregado" value="0" inputmode="decimal" pattern="[0-9,]*">
             </div>
           </div>
         </div>
@@ -1380,8 +1380,8 @@
     const detalle = document.getElementById('saldoDetalle');
     toggle.classList.toggle('active', saldoState.incluido);
     detalle.style.display = saldoState.incluido ? 'block' : 'none';
-    document.getElementById('inpSaldoAnterior').value = formatMiles(saldoState.anterior);
-    document.getElementById('inpEntregado').value = formatMiles(saldoState.entregado);
+    document.getElementById('inpSaldoAnterior').value = formatCantidad(saldoState.anterior);
+    document.getElementById('inpEntregado').value = formatCantidad(saldoState.entregado);
   }
 
   function renderClienteCard(){
@@ -1423,17 +1423,27 @@
     renderSaldoCard();
     renderTicket();
   });
+  function formatSaldoInput(inp){
+    // mientras se escribe: limpia caracteres inválidos, limita a 7 dígitos enteros + 2 decimales,
+    // y aplica separador de miles dinámico
+    let v = inp.value.replace(/[^0-9,]/g, '');
+    const partes = v.split(',');
+    const intPart = partes[0].slice(0, 7);
+    let out = intPart ? Number(intPart).toLocaleString('es-AR') : '';
+    if(partes.length > 1){
+      const decPart = partes.slice(1).join('').slice(0, 2);
+      out += ',' + decPart;
+    }
+    inp.value = out;
+    return parseCantidad(out);
+  }
   document.getElementById('inpSaldoAnterior').addEventListener('input', (e)=>{
-    const raw = parseMiles(e.target.value);
-    e.target.value = raw ? formatMiles(raw) : '';
-    saldoState.anterior = raw;
+    saldoState.anterior = formatSaldoInput(e.target);
     saveSaldo();
     renderTicket();
   });
   document.getElementById('inpEntregado').addEventListener('input', (e)=>{
-    const raw = parseMiles(e.target.value);
-    e.target.value = raw ? formatMiles(raw) : '';
-    saldoState.entregado = raw;
+    saldoState.entregado = formatSaldoInput(e.target);
     saveSaldo();
     renderTicket();
   });
