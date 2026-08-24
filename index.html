@@ -1075,6 +1075,7 @@
           <input type="text" id="cantidad" value="1" inputmode="decimal" pattern="[0-9,]*">
           <button type="button" id="mas">+</button>
         </div>
+        <div class="stepper-unit" id="stepperUnit" style="text-align:center;font-size:12px;color:var(--ink-soft);margin-top:2px;"></div>
       </div>
       <div class="price-total">
         <div class="u" id="precioUnit">—</div>
@@ -1246,17 +1247,17 @@
 
   // Catálogo fijo: los nombres no se editan, sólo el precio (en Productos).
   const catalogoBase = [
-    {id:'p1', nombre:'Cajón Pollo', precio:67000},
-    {id:'p2', nombre:'Unidad Pollo', precio:3350},
-    {id:'p3', nombre:'Cuartos', precio:3100},
-    {id:'p4', nombre:'Filet de Muslo', precio:6100},
-    {id:'p5', nombre:'Alas', precio:2600},
-    {id:'p6', nombre:'Pechuga', precio:6600},
+    {id:'p1', nombre:'Cajón Pollo', precio:69000},
+    {id:'p2', nombre:'Unidad Pollo', precio:3450},
+    {id:'p3', nombre:'Cuartos', precio:3200},
+    {id:'p4', nombre:'Filet de Muslo', precio:6200},
+    {id:'p5', nombre:'Alas', precio:2700},
+    {id:'p6', nombre:'Pechuga', precio:6700},
     {id:'p7', nombre:'Pechuga B', precio:5800},
     {id:'p8', nombre:'Pechuguín', precio:5800},
-    {id:'p9', nombre:'Menudos', precio:1100},
-    {id:'p10', nombre:'Molida', precio:34000},
-    {id:'p11', nombre:'Carcazas', precio:22000},
+    {id:'p9', nombre:'Menudos', precio:1200},
+    {id:'p10', nombre:'Molida', precio:36000},
+    {id:'p11', nombre:'Carcazas', precio:24000},
     {id:'p12', nombre:'Medallones', precio:28500},
     {id:'p13', nombre:'Formitas', precio:8000},
     {id:'p14', nombre:'Tiritas', precio:10000},
@@ -1299,10 +1300,17 @@
     p1:1, p2:1,                       // Cajón Pollo, Unidad Pollo -> de 1
     p3:10, p4:10, p5:10, p6:10,
     p7:10, p8:10, p9:10,              // Cuartos..Menudos -> de 10
-    p10:1, p11:1, p12:1,              // Molida, Carcazas, Medallones -> de 1
-    p13:2, p14:2,                     // Formitas, Tiritas -> de 2
+    p10:20, p11:20, p12:5,              // Molida, Carcazas, Medallones -> de 20 y 5
+    p13:6, p14:6,                     // Formitas, Tiritas -> de 6
   };
   function getStep(prod){ return (prod && stepMap[prod.id]) || 1; }
+
+  // Unidad de medida a mostrar según el producto
+  const unidadMap = { p1:'Caj', p2:'Unid' };
+  function getUnidad(idOrProd){
+    const id = idOrProd && typeof idOrProd === 'object' ? idOrProd.id : idOrProd;
+    return unidadMap[id] || 'Kg';
+  }
 
   function saveProductos(){
     localStorage.setItem(LS_PRODUCTOS, JSON.stringify(productos.map(p=>({id:p.id, precio:p.precio}))));
@@ -1517,6 +1525,7 @@
     const step = getStep(p);
     const inp = document.getElementById('cantidad');
     inp.value = formatCantidad(step);
+    document.getElementById('stepperUnit').textContent = getUnidad(p);
     document.getElementById('productoSelect').value = p.id;
     renderQuickGrid();
     renderSelector();
@@ -1537,6 +1546,7 @@
       totalActual.textContent = '$ 0';
       btnAgregar.disabled = true;
       stockDisp.style.display = 'none';
+      document.getElementById('stepperUnit').textContent = '';
       return;
     }
     const cant = parseCantidad(document.getElementById('cantidad').value)||1;
@@ -1557,14 +1567,14 @@
     const inp = document.getElementById('cantidad');
     const step = getStep(seleccionado);
     const val = Math.max(step, (parseCantidad(inp.value)||step) - step);
-    inp.value = formatCantidad(val);
+    inp.value = formatCantidad(Math.min(val, 9999));
     renderSelector();
   });
   document.getElementById('mas').addEventListener('click', ()=>{
     const inp = document.getElementById('cantidad');
     const step = getStep(seleccionado);
     const val = (parseCantidad(inp.value)||0) + step;
-    inp.value = formatCantidad(val);
+    inp.value = formatCantidad(Math.min(val, 9999));
     renderSelector();
   });
   document.getElementById('cantidad').addEventListener('change', ()=>{
@@ -1572,6 +1582,7 @@
     const step = getStep(seleccionado);
     let val = parseCantidad(inp.value) || step;
     if(val <= 0) val = step;
+    if(val > 9999) val = 9999;
     inp.value = formatCantidad(val);
     renderSelector();
   });
@@ -1581,8 +1592,10 @@
     // (para no pisar la coma decimal a medio escribir, ej. "0,")
     let v = inp.value.replace(/[^0-9,]/g, '');
     const partes = v.split(',');
+    if(partes[0].length > 4) partes[0] = partes[0].slice(0,4); // máx 4 dígitos enteros
     if(partes.length > 2) v = partes[0] + ',' + partes.slice(1).join('');
     else if(partes.length === 2 && partes[1].length > 2) v = partes[0] + ',' + partes[1].slice(0,2);
+    else v = partes.join(',');
     inp.value = v;
     renderSelector();
   });
@@ -1623,7 +1636,7 @@
         row.innerHTML = `
           <div class="i-left">
             <div class="i-name">${escapeHtml(it.nombre)}</div>
-            <div class="i-sub">${formatCantidad(it.cantidad)} x ${money(it.precio)}</div>
+            <div class="i-sub">${formatCantidad(it.cantidad)} ${getUnidad(it.productoId)} x ${money(it.precio)}</div>
           </div>
           <div class="i-total">${money(it.precio*it.cantidad)}</div>
           <button class="i-del" data-id="${it.id}" data-capture-hide="1">✕</button>
@@ -1641,7 +1654,7 @@
     const total = pedido.reduce((s,it)=> s + it.precio*it.cantidad, 0);
     document.getElementById('totalFinal').textContent = money(total);
     document.getElementById('ticketBiz').textContent = bizName || 'Presupuesto';
-    document.getElementById('ticketDate').textContent = new Date().toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
+    document.getElementById('ticketDate').textContent = new Date().toLocaleString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
     document.getElementById('bizLabel').textContent = bizName || '';
 
     const filaCliente = document.getElementById('ticketCliente');
@@ -1791,7 +1804,7 @@
     const mostrarSeccionSaldo = !!r.saldoIncluido;
     const mostrarSaldoAnterior = r.saldoIncluido && r.saldoAnterior;
     const mostrarEntregado = r.saldoIncluido && r.entregado;
-    const fechaTicket = new Date(r.fecha).toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
+    const fechaTicket = new Date(r.fecha).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
 
     const itemsHtml = (!r.items || r.items.length === 0)
       ? '<div class="t-empty">Todavía no agregaste productos</div>'
@@ -1799,7 +1812,7 @@
           <div class="t-item">
             <div class="i-left">
               <div class="i-name">${escapeHtml(it.nombre)}</div>
-              <div class="i-sub">${formatCantidad(it.cantidad)} x ${money(it.precio)}</div>
+              <div class="i-sub">${formatCantidad(it.cantidad)} ${getUnidad(it.productoId)} x ${money(it.precio)}</div>
             </div>
             <div class="i-total">${money(it.precio*it.cantidad)}</div>
           </div>
@@ -1932,7 +1945,7 @@
         <div class="ri-item">
           <div>
             <div class="ri-name">${escapeHtml(it.nombre)}</div>
-            <div class="ri-sub">${formatCantidad(it.cantidad)} x ${money(it.precio)}</div>
+            <div class="ri-sub">${formatCantidad(it.cantidad)} ${getUnidad(it.productoId)} x ${money(it.precio)}</div>
           </div>
           <div class="ri-sub">${money(it.precio*it.cantidad)}</div>
         </div>
