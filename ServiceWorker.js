@@ -1,7 +1,7 @@
-// Service Worker - Presupuesto Rápido
+// Service Worker - Ventas DP
 // Estrategia: cache-first para assets del "app shell", con actualización en segundo plano.
 
-const CACHE_NAME = 'presupuesto-rapido-v4';
+const CACHE_NAME = 'ventas-dp-v1';
 
 // Recursos propios de la app (mismo origen)
 const CORE_ASSETS = [
