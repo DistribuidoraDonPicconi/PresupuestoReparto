@@ -198,12 +198,17 @@
     justify-content:space-between;
     margin-top:12px;
   }
+  /* ---- Lista desplegable con búsqueda (combobox) ---- */
+  .combo{
+    --opt-h:44px;
+    position:relative;
+    width:100%;
+    max-width:300px;
+    margin:0 auto;
+  }
   .producto-select{
     display:block;
-    width:fit-content;
-    max-width:100%;
-    min-width:150px;
-    margin:0 auto;
+    width:100%;
     border:1.5px solid var(--line);
     background:var(--bg);
     border-radius:999px;
@@ -213,21 +218,57 @@
     font-size:16px;
     color:var(--ink);
     text-align:center;
-    text-align-last:center;
     appearance:none;
     -webkit-appearance:none;
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235B6B5C' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>");
     background-repeat:no-repeat;
     background-position:right 14px center;
     background-size:15px;
+    transition:border-color .12s ease;
   }
+  .producto-select::placeholder{color:var(--ink);opacity:1;}
   .producto-select:focus{outline:none; border-color:var(--accent);}
-  /* Fuente de las opciones del desplegable = misma que "Productos rápidos", para mejor lectura */
-  .producto-select option{
+  .combo.open .producto-select{
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235B6B5C' stroke-width='2.5'><path d='M6 15l6-6 6 6'/></svg>");
+  }
+  /* Alto = 3 opciones y media, para que se note que se puede seguir scrolleando */
+  .combo-list{
+    display:none;
+    position:absolute;
+    left:0; right:0;
+    top:calc(100% + 6px);
+    max-height:calc(var(--opt-h) * 3.5);
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+    background:var(--surface);
+    border:1.5px solid var(--line);
+    border-radius:14px;
+    box-shadow:0 8px 22px rgba(30,42,31,0.16);
+    z-index:30;
+  }
+  .combo.open .combo-list{display:block;}
+  .combo-opt, .combo-empty{
+    height:var(--opt-h);
+    display:flex;
+    align-items:center;
+    padding:0 18px;
     font-family:'Inter',sans-serif;
     font-weight:700;
-    font-size:13.5px;
+    font-size:14.5px;
     color:var(--ink);
+    cursor:pointer;
+    border-bottom:1px solid var(--line);
+  }
+  .combo-opt:last-child{border-bottom:none;}
+  .combo-opt.selected{background:var(--accent-soft); color:var(--accent-dark);}
+  .combo-opt.active{background:var(--bg);}
+  .combo-opt.selected.active{background:var(--accent-soft);}
+  .combo-empty{
+    color:var(--ink-soft);
+    font-weight:500;
+    cursor:default;
+    justify-content:center;
   }
   .stepper-center{
     display:flex;
@@ -1066,9 +1107,12 @@
     <div class="quick-grid" id="quickGrid"></div>
 
     <div class="selector-card">
-      <select class="producto-select" id="productoSelect">
-        <option value="">Elegí un producto</option>
-      </select>
+      <div class="combo" id="productoCombo">
+        <input type="text" class="producto-select" id="productoInput" placeholder="Elegí un producto"
+               autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
+               enterkeyhint="done" role="combobox" aria-expanded="false" aria-controls="productoList">
+        <div class="combo-list" id="productoList" role="listbox"></div>
+      </div>
       <div class="stepper-center">
         <div class="stepper">
           <button type="button" id="menos">−</button>
@@ -1216,7 +1260,7 @@
   // se cargó (aunque sea desde una copia vieja guardada en caché), la detecta
   // y recarga la página automáticamente para traer la última versión.
   (function(){
-    var APP_VERSION = '2026-08-06.1';
+    var APP_VERSION = '2026-10-21.1';
     function checkForUpdate(){
       try{
         fetch(location.pathname + '?_check=' + Date.now(), {cache:'no-store'})
@@ -1521,12 +1565,99 @@
     });
   }
 
-  function renderProductoSelect(){
-    const sel = document.getElementById('productoSelect');
-    sel.innerHTML = '<option value="">Elegí un producto</option>' +
-      productos.map(p=>`<option value="${p.id}">${escapeHtml(p.nombre)}</option>`).join('');
-    sel.value = seleccionado ? seleccionado.id : '';
+  // ---------- Lista desplegable con búsqueda ----------
+  const comboWrap = document.getElementById('productoCombo');
+  const comboInput = document.getElementById('productoInput');
+  const comboList = document.getElementById('productoList');
+  let comboItems = [];
+  let comboActive = -1;
+
+  function normTexto(s){
+    return String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
   }
+  function comboAbrir(){
+    comboWrap.classList.add('open');
+    comboInput.setAttribute('aria-expanded','true');
+  }
+  function comboCerrar(){
+    comboWrap.classList.remove('open');
+    comboInput.setAttribute('aria-expanded','false');
+    comboActive = -1;
+  }
+  function syncCombo(forzar){
+    if(forzar || document.activeElement !== comboInput){
+      comboInput.value = seleccionado ? seleccionado.nombre : '';
+    }
+  }
+  function renderComboList(filtro){
+    const q = normTexto((filtro||'').trim());
+    comboItems = productos.filter(p=> !q || normTexto(p.nombre).includes(q));
+    comboList.innerHTML = comboItems.length
+      ? comboItems.map(p=>`<div class="combo-opt${seleccionado && seleccionado.id===p.id ? ' selected' : ''}" role="option" data-id="${p.id}">${escapeHtml(p.nombre)}</div>`).join('')
+      : '<div class="combo-empty">Sin resultados</div>';
+    comboActive = -1;
+    comboList.scrollTop = 0;
+  }
+  function comboScrollASeleccionado(){
+    const el = comboList.querySelector('.combo-opt.selected');
+    if(el) comboList.scrollTop = Math.max(0, el.offsetTop - el.offsetHeight);
+  }
+  function comboElegir(id){
+    selectProduct(id);
+    comboCerrar();
+    comboInput.blur();
+  }
+  function comboMarcarActivo(i){
+    const opts = comboList.querySelectorAll('.combo-opt');
+    if(!opts.length) return;
+    comboActive = (i + opts.length) % opts.length;
+    opts.forEach((o,k)=> o.classList.toggle('active', k === comboActive));
+    opts[comboActive].scrollIntoView({block:'nearest'});
+  }
+
+  function renderProductoSelect(){
+    renderComboList(document.activeElement === comboInput && comboWrap.classList.contains('open') ? comboInput.value : '');
+    syncCombo();
+  }
+
+  comboInput.addEventListener('focus', ()=>{
+    renderComboList('');
+    comboAbrir();
+    comboScrollASeleccionado();
+    // selecciona el texto para que al escribir se reemplace y se filtre de cero
+    setTimeout(()=>{ try{ comboInput.select(); }catch(e){} }, 0);
+  });
+  comboInput.addEventListener('click', ()=>{
+    if(!comboWrap.classList.contains('open')){
+      renderComboList('');
+      comboAbrir();
+      comboScrollASeleccionado();
+    }
+  });
+  comboInput.addEventListener('input', ()=>{
+    renderComboList(comboInput.value);
+    comboAbrir();
+  });
+  comboInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'ArrowDown'){ e.preventDefault(); comboAbrir(); comboMarcarActivo(comboActive + 1); }
+    else if(e.key === 'ArrowUp'){ e.preventDefault(); comboAbrir(); comboMarcarActivo(comboActive - 1); }
+    else if(e.key === 'Enter'){
+      e.preventDefault();
+      const p = comboActive >= 0 ? comboItems[comboActive] : comboItems[0];
+      if(p) comboElegir(p.id);
+    }
+    else if(e.key === 'Escape'){ comboCerrar(); comboInput.blur(); }
+  });
+  comboInput.addEventListener('blur', ()=>{
+    comboCerrar();
+    syncCombo(true);
+  });
+  // mousedown con preventDefault evita que el input pierda el foco antes del click en una opción
+  comboList.addEventListener('mousedown', (e)=> e.preventDefault());
+  comboList.addEventListener('click', (e)=>{
+    const opt = e.target.closest('.combo-opt');
+    if(opt) comboElegir(opt.dataset.id);
+  });
 
   function selectProduct(id){
     const p = productos.find(x=>x.id===id);
@@ -1536,17 +1667,13 @@
     const inp = document.getElementById('cantidad');
     inp.value = formatCantidad(step);
     document.getElementById('stepperUnit').textContent = getUnidad(p);
-    document.getElementById('productoSelect').value = p.id;
+    syncCombo();
     renderQuickGrid();
     renderSelector();
   }
 
-  document.getElementById('productoSelect').addEventListener('change', (e)=>{
-    if(e.target.value) selectProduct(e.target.value);
-    else { seleccionado = null; renderQuickGrid(); renderSelector(); }
-  });
-
   function renderSelector(){
+    syncCombo();
     const precioUnit = document.getElementById('precioUnit');
     const totalActual = document.getElementById('totalActual');
     const btnAgregar = document.getElementById('btnAgregar');
